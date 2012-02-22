@@ -7,18 +7,16 @@ use warnings;
 # static method
 sub get_meta {
     my ($class, $req) = @_;
-
-    my $uri    = $req->{uri};
     my $leaf   = $req->{-leaf};
-
-    my $key;
-    if ($leaf) {
-        $key = $leaf;
-    } else {
-        $key  = ':package';
-    }
+    my $key = $req->{-leaf} || ':package';
     no strict 'refs';
     ${ $req->{-module} . "::SPEC" }{$key};
+}
+
+sub get_all_meta {
+    my ($class, $req) = @_;
+    no strict 'refs';
+    \%{ $req->{-module} . "::SPEC" };
 }
 
 1;
@@ -33,7 +31,7 @@ Perinci::Access::InProcess::MetaAccessor - Default class to access metadata in
 
 =head1 VERSION
 
-version 0.01
+version 0.02
 
 =head1 AUTHOR
 

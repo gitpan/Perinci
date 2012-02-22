@@ -4,17 +4,28 @@ use 5.010;
 use strict;
 use warnings;
 
-use Module::Load;
-use Module::Loaded;
-
 use parent qw(Perinci::Access::Base);
 
-our $VERSION = '0.01'; # VERSION
+our $VERSION = '0.02'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
-sub _prehandle {
+sub _init {
+    require Tie::Cache;
+
+    my ($self) = @_;
+    $self->SUPER::_init();
+
+    # to cache wrapped result
+    tie my(%cache), 'Tie::Cache', 100;
+    $self->{_cache} = \%cache;
+
+    $self->{load} //= 1;
+}
+
+sub _before_action {
     my ($self, $req) = @_;
+    no strict 'refs';
 
     # parse code entity from URI (cache the result in the request object) & load
     # module
@@ -26,7 +37,7 @@ sub _prehandle {
     if ($path eq '/') {
         $package = '/';
         $leaf    = '';
-        $module  = 'main';
+        $module  = '';
     } else {
         if ($path =~ m!(.+)/+(.*)!) {
             $package = $1;
@@ -42,23 +53,42 @@ sub _prehandle {
 
     return [400, "Invalid syntax in module '$module', ".
                 "please use valid module name"]
-        if $module !~ $re_mod;
+        if $module && $module !~ $re_mod;
 
-    unless ($module eq 'main' || is_loaded($module)) {
-        eval { load $module };
-        return [500, "Can't load module $module: $@"] if $@;
+    if ($module) {
+        my $module_p = $module;
+        $module_p =~ s!::!/!g;
+        $module_p .= ".pm";
+
+        # WISHLIST: cache negative result if someday necessary
+        if ($self->{load}) {
+            unless ($INC{$module_p}) {
+                eval { require $module_p };
+                if ($@) {
+                    return [404, "Can't find module $module"];
+                } else {
+                    if ($self->{after_load}) {
+                        eval { $self->{after_load}($self, module=>$module) };
+                        return [500, "after_load dies: $@"] if $@;
+                    }
+                }
+            }
+        }
+
+        $req->{-package} = $package;
+        $req->{-leaf}    = $leaf;
+        $req->{-module}  = $module;
     }
-    $req->{-package} = $package;
-    $req->{-leaf}    = $leaf;
-    $req->{-module}  = $module;
 
     # find out type of leaf
     my $type;
     if ($leaf) {
         if ($leaf =~ /^[%\@\$]/) {
-            $type = 'variable';
             # XXX check existence of variable
+            $type = 'variable';
         } else {
+            return [404, "Can't find function $leaf in $module"]
+                unless defined &{"$module\::$leaf"};
             $type = 'function';
         }
     } else {
@@ -70,47 +100,183 @@ sub _prehandle {
 }
 
 
-sub action_info {
+sub _get_meta_accessor {
     my ($self, $req) = @_;
-    [200, "OK", {
-        v    => 1.1,
-        uri  => $req->{uri}->as_string,
-        type => $req->{-type},
-    }];
+
+    no strict 'refs';
+    my $ma = ${ $req->{-module} . "::PERINCI_META_ACCESSOR" } //
+        $self->{meta_accessor} //
+            "Perinci::Access::InProcess::MetaAccessor";
+    my $ma_p = $ma;
+    $ma_p =~ s!::!/!g;
+    $ma_p .= ".pm";
+    eval { require $ma_p };
+    return [500, "Can't load meta accessor module $ma"] if $@;
+    [200, "OK", $ma];
+}
+
+sub _get_code_and_meta {
+    require Perinci::Sub::Wrapper;
+
+    no strict 'refs';
+    my ($self, $req) = @_;
+    my $name = $req->{-module} . "::" . $req->{-leaf};
+    return [200, "OK", $self->{_cache}{$name}] if $self->{_cache}{$name};
+
+    my $res = $self->_get_meta_accessor($req);
+    return $res if $res->[0] != 200;
+    my $ma = $res->[2];
+
+    my $meta = $ma->get_meta($req);
+    return [404, "No metadata"] unless $meta;
+
+    my $code = \&{$name};
+    my $wres = Perinci::Sub::Wrapper::wrap_sub(
+        sub=>$code, meta=>$meta,
+        convert=>{args_as=>'hash', result_naked=>0});
+    return [500, "Can't wrap function: $wres->[0] - $wres->[1]"]
+        unless $wres->[0] == 200;
+    $code = $wres->[2]{sub};
+
+    $self->{_cache}{$name} = [$code, $meta];
+    [200, "OK", [$code, $meta]];
+}
+
+sub action_list {
+    require Module::List;
+
+    my ($self, $req) = @_;
+    my $detail = $req->{detail};
+    my $f_type = $req->{type} || "";
+
+    my @res;
+
+    # XXX recursive?
+
+    # get submodules
+    unless ($f_type && $f_type ne 'package') {
+        my $lres = Module::List::list_modules(
+            $req->{-module} ? "$req->{-module}\::" : "",
+            {list_modules=>1});
+        my $p0 = $req->{-path};
+        $p0 =~ s!/+$!!;
+        for my $m (sort keys %$lres) {
+            $m =~ s!.+::!!;
+            my $uri = join("", "pm:", $p0, "/", $m, "/");
+            if ($detail) {
+                push @res, {uri=>$uri, type=>"package"};
+            } else {
+                push @res, $uri;
+            }
+        }
+    }
+
+    # get all entities from this module
+    my $res = $self->_get_meta_accessor($req);
+    return $res if $res->[0] != 200;
+    my $ma = $res->[2];
+    my $spec = $ma->get_all_meta($req);
+    my $base = "pm:/$req->{-module}"; $base =~ s!::!/!g;
+    for (sort keys %$spec) {
+        next if /^:/;
+        my $uri = join("", $base, "/", $_);
+        my $t = $_ =~ /^[%\@\$]/ ? 'variable' : 'function';
+        next if $f_type && $f_type ne $t;
+        if ($detail) {
+            push @res, {
+                #v=>1.1,
+                uri=>$uri, type=>$t,
+            };
+        } else {
+            push @res, $uri;
+        }
+    }
+
+    [200, "OK", \@res];
 }
 
 sub action_meta {
     my ($self, $req) = @_;
-
-    no strict 'refs';
-    my $ma;
-    $ma = ${ $req->{-module} . "::PERINCI_META_ACCESSOR" } //
-        $self->{meta_accessor} // "Perinci::Access::InProcess::MetaAccessor";
-    load $ma;
-    my $meta = $ma->get_meta($req);
-    $meta ? [200, "OK", $meta] : [404, "No metadata found for entity"];
-}
-
-sub action_list {
-    my ($self, $req) = @_;
-    return [502, "Not yet implemented"] unless $req->{-type} eq 'package';
-    [502, "Not yet implemented (2)"];
+    return [404, "No metadata for /"] unless $req->{-module};
+    my $res = $self->_get_code_and_meta($req);
+    return $res unless $res->[0] == 200;
+    my (undef, $meta) = @{$res->[2]};
+    [200, "OK", $meta];
 }
 
 sub action_call {
     my ($self, $req) = @_;
-    return [502, "Not yet implemented"] unless $req->{-type} eq 'function';
-    no strict 'refs';
-    my $code = \&{$req->{-module} . "::" . $req->{-leaf}};
-    # XXX wrap
+
+    my $res = $self->_get_code_and_meta($req);
+    return $res unless $res->[0] == 200;
+    my ($code, undef) = @{$res->[2]};
     my $args = $req->{args} // {};
     $code->(%$args);
 }
 
-sub action_complete {
+sub action_complete_arg_val {
     my ($self, $req) = @_;
-    return [502, "Not yet implemented"] unless $req->{-type} eq 'function';
-    [502, "Not yet implemented (2)"];
+    my $arg = $req->{arg} or return [400, "Please specify arg"];
+    my $word = $req->{word} // "";
+
+    my $res = $self->_get_code_and_meta($req);
+    return $res unless $res->[0] == 200;
+    my (undef, $meta) = @{$res->[2]};
+    my $args_p = $meta->{args} // {};
+    my $arg_p = $args_p->{$arg} or return [404, "No such function arg"];
+
+    my $words;
+    eval { # completion sub can die, etc.
+
+        if ($arg_p->{completion}) {
+            $words = $arg_p->{completion}(word=>$word);
+            die "Completion sub does not return array"
+                unless ref($words) eq 'ARRAY';
+            return;
+        }
+
+        my $sch = $arg_p->{schema};
+
+        my ($type, $cs) = @{$sch};
+        if ($cs->{'in'}) {
+            $words = $cs->{'in'};
+            return;
+        }
+
+        if ($type =~ /^int\*?$/) {
+            my $limit = 100;
+            if ($cs->{between} &&
+                    $cs->{between}[0] - $cs->{between}[0] <= $limit) {
+                $words = [$cs->{between}[0] .. $cs->{between}[1]];
+                return;
+            } elsif ($cs->{xbetween} &&
+                    $cs->{xbetween}[0] - $cs->{xbetween}[0] <= $limit) {
+                $words = [$cs->{xbetween}[0]+1 .. $cs->{xbetween}[1]-1];
+                return;
+            } elsif (defined($cs->{min}) && defined($cs->{max}) &&
+                         $cs->{max}-$cs->{min} <= $limit) {
+                $words = [$cs->{min} .. $cs->{max}];
+                return;
+            } elsif (defined($cs->{min}) && defined($cs->{xmax}) &&
+                         $cs->{xmax}-$cs->{min} <= $limit) {
+                $words = [$cs->{min} .. $cs->{xmax}-1];
+                return;
+            } elsif (defined($cs->{xmin}) && defined($cs->{max}) &&
+                         $cs->{max}-$cs->{xmin} <= $limit) {
+                $words = [$cs->{xmin}+1 .. $cs->{max}];
+                return;
+            } elsif (defined($cs->{xmin}) && defined($cs->{xmax}) &&
+                         $cs->{xmax}-$cs->{xmin} <= $limit) {
+                $words = [$cs->{min}+1 .. $cs->{max}-1];
+                return;
+            }
+        }
+
+        $words = [];
+    };
+    return [500, "Completion died: $@"] if $@;
+
+    [200, "OK", [grep /^\Q$word\E/, @$words]];
 }
 
 1;
@@ -126,7 +292,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.01
+version 0.02
 
 =head1 SYNOPSIS
 
@@ -203,65 +369,12 @@ don't have to change client code. This class also does some function wrapping to
 convert argument passing style or produce result envelope, so you a consistent
 interface.
 
-=head2 Functions not accepting hash arguments
-
-As can be seen from the Synopsis, Perinci expects functions to accept arguments
-as hash. If your function accepts arguments from array, add C<args_as> =>
-C<array> to your metadata property. When wrapping, L<Perinci::Sub::Wrapper> can
-add a conversion code so that the function wrapper accepts hash as normal, but
-your function still gets an array. Example:
-
- $SPEC{is_palindrome} = {
-     v => 1.1,
-     summary => 'Multiple two numbers',
-     args => {
-         a => { schema=>'float*', req=>1, pos=>0 },
-         b => { schema=>'float*', req=>1, pos=>1 },
-     },
- };
- sub mult2 {
-     my ($a, $b) = @_;
-     [200, "OK", $a*$b];
- }
-
- # called without wrapping
- mult2(2, 3); # -> [200,"OK",6]
-
- # called after wrapping, by default wrapper will convert hash arguments to
- # array for passing to the original function
- mult2(a=>2, b=>3); # -> [200,"OK",6]
-
-=head2 Functions not returning enveloped result
-
-Likewise, by default Perinci assumes your function returns enveloped result. But
-if your function does not, you can set C<result_naked> => 1 to declare that. The
-wrapper code can add code to create envelope for the function result.
-
- $SPEC{is_palindrome} = {
-     v => 1.1,
-     summary                 => 'Check whether a string is a palindrome',
-     args                    => {str => {schema=>'str*'}},
-     result                  => {schema=>'bool*'},
-     result_naked            => 1,
- };
- sub is_palindrome {
-     my %args = @_;
-     my $str  = $args{str};
-     $str eq reverse($str);
- }
-
- # called without wrapping
- is_palindrome(str=>"kodok"); # -> 1
-
- # called after wrapping, by default wrapper adds envelope
- is_palindrome(str=>"kodok"); # -> [200,"OK",1]
-
 =head2 Location of metadata
 
 By default, the metadata should be put in C<%SPEC> package variable, in a key
 with the same name as the URI path leaf (use C<:package>) for the package
 itself). For example, metadata for C</Foo/Bar/$var> should be put in
-C<$Foo::Bar::SPEC{'$var'}>, C</Foo/Bar/> in C<$Foo::Bar::SPEC{':package'}. The
+C<$Foo::Bar::SPEC{'$var'}>, C</Foo/Bar/> in C<$Foo::Bar::SPEC{':package'}>. The
 metadata for the top-level namespace (C</>) should be put in
 C<$main::SPEC{':package'}>.
 
@@ -284,7 +397,11 @@ Instantiate object. Known options:
 
 =over 4
 
-=item * meta_accessor => STR
+=item * meta_accessor => STR (default 'Perinci::Access::InProcess::MetaAccessor')
+
+=item * load => STR (default 1)
+
+Whether to load modules using C<require>.
 
 =back
 
@@ -296,10 +413,9 @@ C<action_ACTION> methods.
 
 =head1 FAQ
 
-=head1 Why %SPEC?
+=head2 Why %SPEC?
 
-The name was first chosen when during Sub::Spec era, so it stuck. You can change
-it though.
+The name was first chosen when during Sub::Spec era, so it stuck.
 
 =head1 SEE ALSO
 
