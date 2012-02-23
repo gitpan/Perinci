@@ -6,7 +6,7 @@ use warnings;
 
 use parent qw(Perinci::Access::Base);
 
-our $VERSION = '0.04'; # VERSION
+our $VERSION = '0.05'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -69,7 +69,7 @@ sub _before_action {
             unless ($INC{$module_p}) {
                 eval { require $module_p };
                 if ($@) {
-                    return [404, "Can't find module $module"];
+                    # ignore error, we'll try accessing the package anyway
                 } else {
                     if ($self->{after_load}) {
                         eval { $self->{after_load}($self, module=>$module) };
@@ -293,7 +293,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.04
+version 0.05
 
 =head1 SYNOPSIS
 
@@ -402,7 +402,11 @@ Instantiate object. Known options:
 
 =item * load => STR (default 1)
 
-Whether to load modules using C<require>.
+Whether attempt to load modules using C<require>.
+
+=item * after_load => CODE
+
+If set, code will be executed the first time Perl module is successfully loaded.
 
 =back
 
