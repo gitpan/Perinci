@@ -7,6 +7,8 @@ use warnings;
 use Scalar::Util qw(blessed);
 use URI;
 
+our $VERSION = '0.04'; # VERSION
+
 sub new {
     my ($class, %opts) = @_;
 
@@ -25,8 +27,9 @@ sub request {
 
     my ($sch, $subclass);
     if ($uri =~ /^\w+(::\w+)+$/) {
+        # assume X::Y is a module name
         $uri =~ s!::!/!g;
-        $uri = URI->new("pm:/$uri");
+        $uri = URI->new("pm:/$uri/");
         $sch = "pm";
     } else {
         $uri = URI->new($uri) unless blessed($uri);
@@ -62,7 +65,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.03
+version 0.04
 
 =head1 SYNOPSIS
 
