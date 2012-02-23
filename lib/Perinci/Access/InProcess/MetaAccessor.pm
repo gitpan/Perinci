@@ -31,7 +31,7 @@ Perinci::Access::InProcess::MetaAccessor - Default class to access metadata in
 
 =head1 VERSION
 
-version 0.02
+version 0.03
 
 =head1 AUTHOR
 

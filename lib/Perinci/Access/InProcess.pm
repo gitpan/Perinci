@@ -6,7 +6,7 @@ use warnings;
 
 use parent qw(Perinci::Access::Base);
 
-our $VERSION = '0.02'; # VERSION
+our $VERSION = '0.03'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -55,6 +55,10 @@ sub _before_action {
                 "please use valid module name"]
         if $module && $module !~ $re_mod;
 
+    $req->{-package} = $package;
+    $req->{-leaf}    = $leaf;
+    $req->{-module}  = $module;
+
     if ($module) {
         my $module_p = $module;
         $module_p =~ s!::!/!g;
@@ -74,10 +78,6 @@ sub _before_action {
                 }
             }
         }
-
-        $req->{-package} = $package;
-        $req->{-leaf}    = $leaf;
-        $req->{-module}  = $module;
     }
 
     # find out type of leaf
@@ -98,7 +98,6 @@ sub _before_action {
 
     0;
 }
-
 
 sub _get_meta_accessor {
     my ($self, $req) = @_;
@@ -137,6 +136,7 @@ sub _get_code_and_meta {
     return [500, "Can't wrap function: $wres->[0] - $wres->[1]"]
         unless $wres->[0] == 200;
     $code = $wres->[2]{sub};
+    $meta = $wres->[2]{meta};
 
     $self->{_cache}{$name} = [$code, $meta];
     [200, "OK", [$code, $meta]];
@@ -283,6 +283,7 @@ sub action_complete_arg_val {
 # ABSTRACT: Use Rinci access protocol (Riap) to access Perl code
 
 
+
 __END__
 =pod
 
@@ -292,7 +293,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.02
+version 0.03
 
 =head1 SYNOPSIS
 
@@ -366,8 +367,8 @@ The abstraction provides some benefits, still. For example, you can actually
 place metadata not in C<%SPEC> but elsewhere, like in another file or even
 database, or even by merging from several sources. By using this module, you
 don't have to change client code. This class also does some function wrapping to
-convert argument passing style or produce result envelope, so you a consistent
-interface.
+convert argument passing style or produce result envelope, so you get a
+consistent interface.
 
 =head2 Location of metadata
 
@@ -410,6 +411,17 @@ Whether to load modules using C<require>.
 Process Riap request and return enveloped result. This method will in turn parse
 URI and other Riap request keys into C<$req> hash, and then call
 C<action_ACTION> methods.
+
+Some notes:
+
+=over 4
+
+=item * Metadata returned by the 'meta' action has normalized schemas in them
+
+Schemas in metadata (like in the C<args> and C<return> property) are normalized
+by L<Perinci::Sub::Wrapper>.
+
+=back
 
 =head1 FAQ
 

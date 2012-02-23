@@ -27,4 +27,4 @@ requires:
 resources:
   homepage: http://metacpan.org/release/Perinci
   repository: http://github.com/sharyanto/perl-Perinci
-version: 0.02
+version: 0.03
