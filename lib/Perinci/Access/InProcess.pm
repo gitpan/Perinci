@@ -6,7 +6,7 @@ use warnings;
 
 use parent qw(Perinci::Access::Base);
 
-our $VERSION = '0.05'; # VERSION
+our $VERSION = '0.06'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -129,16 +129,21 @@ sub _get_code_and_meta {
     my $meta = $ma->get_meta($req);
     return [404, "No metadata"] unless $meta;
 
-    my $code = \&{$name};
-    my $wres = Perinci::Sub::Wrapper::wrap_sub(
-        sub=>$code, meta=>$meta,
-        convert=>{args_as=>'hash', result_naked=>0});
-    return [500, "Can't wrap function: $wres->[0] - $wres->[1]"]
-        unless $wres->[0] == 200;
-    $code = $wres->[2]{sub};
-    $meta = $wres->[2]{meta};
+    my $code;
+    if ($req->{-type} eq 'function') {
+        $code = \&{$name};
+        my $wres = Perinci::Sub::Wrapper::wrap_sub(
+            sub=>$code, meta=>$meta,
+            convert=>{args_as=>'hash', result_naked=>0});
+        return [500, "Can't wrap function: $wres->[0] - $wres->[1]"]
+            unless $wres->[0] == 200;
+        $code = $wres->[2]{sub};
+        $meta = $wres->[2]{meta};
 
-    $self->{_cache}{$name} = [$code, $meta];
+        $self->{_cache}{$name} = [$code, $meta];
+    } elsif ($req->{-type} eq 'package') {
+        $meta->{pkg_version} //= ${ $req->{-module} . "::VERSION" };
+    }
     [200, "OK", [$code, $meta]];
 }
 
@@ -293,7 +298,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.05
+version 0.06
 
 =head1 SYNOPSIS
 

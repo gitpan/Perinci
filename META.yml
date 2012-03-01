@@ -19,7 +19,7 @@ requires:
   Perinci::Examples: 0.08
   Perinci::Sub::Wrapper: 0.13
   Riap: 1.1.7
-  Rinci: 1.1.6
+  Rinci: 1.1.7
   Test::More: 0.96
   Tie::Cache: 0
   URI: 0
@@ -27,4 +27,4 @@ requires:
 resources:
   homepage: http://metacpan.org/release/Perinci
   repository: http://github.com/sharyanto/perl-Perinci
-version: 0.05
+version: 0.06
