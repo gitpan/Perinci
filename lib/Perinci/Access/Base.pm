@@ -7,7 +7,7 @@ use warnings;
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.06'; # VERSION
+our $VERSION = '0.07'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -102,11 +102,14 @@ sub actionmeta_info { +{
 
 sub action_info {
     my ($self, $req) = @_;
-    [200, "OK", {
+    my $res = {
         v    => 1.1,
         uri  => $req->{uri}->as_string,
         type => $req->{-type},
-    }];
+    };
+    $res->{entity_version} = $req->{-entity_version}
+        if defined $req->{-entity_version};
+    [200, "OK", $res];
 }
 
 sub actionmeta_actions { +{
@@ -160,7 +163,7 @@ Perinci::Access::Base - Base class for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.06
+version 0.07
 
 =head1 AUTHOR
 

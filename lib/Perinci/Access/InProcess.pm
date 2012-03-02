@@ -3,10 +3,11 @@ package Perinci::Access::InProcess;
 use 5.010;
 use strict;
 use warnings;
+use Log::Any '$log';
 
 use parent qw(Perinci::Access::Base);
 
-our $VERSION = '0.06'; # VERSION
+our $VERSION = '0.07'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -80,8 +81,9 @@ sub _before_action {
         }
     }
 
-    # find out type of leaf
+    # find out type of leaf and other information
     my $type;
+    my $entity_version;
     if ($leaf) {
         if ($leaf =~ /^[%\@\$]/) {
             # XXX check existence of variable
@@ -93,8 +95,12 @@ sub _before_action {
         }
     } else {
         $type = 'package';
+        $entity_version = ${$module . '::VERSION'};
     }
     $req->{-type} = $type;
+    $req->{-entity_version} = $entity_version;
+
+    #$log->tracef("req=%s", $req);
 
     0;
 }
@@ -298,7 +304,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.06
+version 0.07
 
 =head1 SYNOPSIS
 

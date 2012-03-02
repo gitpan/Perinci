@@ -17,13 +17,14 @@ my %module_build_args = (
     "Steven Haryanto <stevenharyanto\@gmail.com>"
   ],
   "dist_name" => "Perinci",
-  "dist_version" => "0.06",
+  "dist_version" => "0.07",
   "license" => "perl",
   "module_name" => "Perinci",
   "recommends" => {},
   "recursive_test_files" => 1,
   "requires" => {
     "Class::Inspector" => 0,
+    "Log::Any" => 0,
     "Module::List" => 0,
     "Perinci::Examples" => "0.08",
     "Perinci::Sub::Wrapper" => "0.13",
