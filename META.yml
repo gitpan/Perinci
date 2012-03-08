@@ -19,8 +19,9 @@ requires:
   Module::List: 0
   Perinci::Examples: 0.08
   Perinci::Sub::Wrapper: 0.13
-  Riap: 1.1.7
+  Riap: 1.1.9
   Rinci: 1.1.7
+  SHARYANTO::Package::Util: 0
   Test::More: 0.96
   Tie::Cache: 0
   URI: 0
@@ -28,4 +29,4 @@ requires:
 resources:
   homepage: http://metacpan.org/release/Perinci
   repository: http://github.com/sharyanto/perl-Perinci
-version: 0.07
+version: 0.08

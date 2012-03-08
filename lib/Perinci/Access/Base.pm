@@ -7,7 +7,7 @@ use warnings;
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.07'; # VERSION
+our $VERSION = '0.08'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -67,7 +67,11 @@ sub _init {
     my ($self) = @_;
 
     # build a list of supported actions for each type of entity
-    my %typeacts; # key = type, val = {action1=>meta, ...}
+    my %typeacts = (
+        package  => [],
+        function => [],
+        variable => [],
+    ); # key = type, val = [[ACTION, META], ...]
 
     my @comacts;
     for my $meth (@{Class::Inspector->methods(ref $self)}) {
@@ -151,6 +155,16 @@ sub actionmeta_complete_arg_val { +{
     summary    => "Complete function's argument value"
 } }
 
+sub actionmeta_child_metas { +{
+    applies_to => ['package'],
+    summary    => "Get metadata of all child entities",
+} }
+
+sub actionmeta_get { +{
+    applies_to => ['variable'],
+    summary    => "Get value of variable",
+} }
+
 1;
 # ABSTRACT: Base class for Perinci Riap clients
 
@@ -163,7 +177,7 @@ Perinci::Access::Base - Base class for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.07
+version 0.08
 
 =head1 AUTHOR
 

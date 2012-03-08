@@ -3,11 +3,12 @@ package Perinci::Access;
 use 5.010;
 use strict;
 use warnings;
+use Log::Any '$log';
 
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.07'; # VERSION
+our $VERSION = '0.08'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -77,7 +78,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.07
+version 0.08
 
 =head1 SYNOPSIS
 

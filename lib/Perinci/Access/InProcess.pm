@@ -7,7 +7,9 @@ use Log::Any '$log';
 
 use parent qw(Perinci::Access::Base);
 
-our $VERSION = '0.07'; # VERSION
+use SHARYANTO::Package::Util qw(package_exists);
+
+our $VERSION = '0.08'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -69,8 +71,22 @@ sub _before_action {
         if ($self->{load}) {
             unless ($INC{$module_p}) {
                 eval { require $module_p };
-                if ($@) {
-                    # ignore error, we'll try accessing the package anyway
+                my $req_err = $@;
+                if ($req_err) {
+                    if (!package_exists($module)) {
+                        return [500, "Can't load module $module (probably ".
+                                    "mistyped or missing module): $req_err"];
+                    } elsif ($req_err !~ m!Can't locate!) {
+                        return [500, "Can't load module $module (probably ".
+                                    "compile error): $req_err"];
+                    }
+                    # require error of "Can't locate ..." can be ignored. it
+                    # might mean package is already defined by other code. we'll
+                    # try and access it anyway.
+                } elsif (!package_exists($module)) {
+                    # shouldn't happen
+                    return [500, "Module loaded OK, but no $module package ".
+                                "found, something's wrong"];
                 } else {
                     if ($self->{after_load}) {
                         eval { $self->{after_load}($self, module=>$module) };
@@ -290,6 +306,42 @@ sub action_complete_arg_val {
     [200, "OK", [grep /^\Q$word\E/, @$words]];
 }
 
+sub action_child_metas {
+    my ($self, $req) = @_;
+
+    my $res = $self->action_list($req);
+    return $res unless $res->[0] == 200;
+    my $ents = $res->[2];
+
+    my %res;
+    for my $ent (@$ents) {
+        $res = $self->request(meta => $ent);
+        # ignore failed request
+        next unless $res->[0] == 200;
+        $res{$ent} = $res->[2];
+    }
+    [200, "OK", \%res];
+}
+
+sub action_get {
+    no strict 'refs';
+
+    my ($self, $req) = @_;
+    local $req->{-leaf} = $req->{-leaf};
+
+    # extract prefix
+    $req->{-leaf} =~ s/^([%\@\$])//
+        or return [500, "BUG: Unknown variable prefix"];
+    my $prefix = $1;
+    my $name = $req->{-module} . "::" . $req->{-leaf};
+    my $res =
+        $prefix eq '$' ? ${$name} :
+            $prefix eq '@' ? \@{$name} :
+                $prefix eq '%' ? \%{$name} :
+                    undef;
+    [200, "OK", $res];
+}
+
 1;
 # ABSTRACT: Use Rinci access protocol (Riap) to access Perl code
 
@@ -304,7 +356,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.07
+version 0.08
 
 =head1 SYNOPSIS
 
