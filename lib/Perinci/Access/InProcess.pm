@@ -9,7 +9,7 @@ use parent qw(Perinci::Access::Base);
 
 use SHARYANTO::Package::Util qw(package_exists);
 
-our $VERSION = '0.08'; # VERSION
+our $VERSION = '0.09'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -163,8 +163,12 @@ sub _get_code_and_meta {
         $meta = $wres->[2]{meta};
 
         $self->{_cache}{$name} = [$code, $meta];
-    } elsif ($req->{-type} eq 'package') {
-        $meta->{pkg_version} //= ${ $req->{-module} . "::VERSION" };
+    }
+    unless (defined $meta->{entity_version}) {
+        my $ver = ${ $req->{-module} . "::VERSION" };
+        if (defined $ver) {
+            $meta->{entity_version} = $ver;
+        }
     }
     [200, "OK", [$code, $meta]];
 }
@@ -356,7 +360,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.08
+version 0.09
 
 =head1 SYNOPSIS
 
