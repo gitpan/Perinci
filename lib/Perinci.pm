@@ -1,6 +1,6 @@
 package Perinci;
 
-our $VERSION = '0.09'; # VERSION
+our $VERSION = '0.10'; # VERSION
 
 1;
 # ABSTRACT: Collection of Perl modules for Rinci and Riap
@@ -18,7 +18,7 @@ Perinci - Collection of Perl modules for Rinci and Riap
 
 =head1 VERSION
 
-version 0.09
+version 0.10
 
 =head1 DESCRIPTION
 
@@ -66,9 +66,8 @@ message, shell tab completion, etc.
 
 =item * Documentation tools
 
-See CPAN for L<Perinci::Package::To::POD>, L<Perinci::Sub::To::POD>,
-L<Perinci::Sub::To::Text::Usage>, L<Perinci::Sub::To::HTML>, and other
-Perinci::To::* modules.
+See CPAN for L<Perinci::To::POD>, L<Perinci::To::Text>, L<Perinci::To::HTML>.
+These document generators support translations based on L<Locale::Maketext>.
 
 =item * Function/metadata generators
 

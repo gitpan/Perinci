@@ -2,7 +2,7 @@ NAME
     Perinci - Collection of Perl modules for Rinci and Riap
 
 VERSION
-    version 0.09
+    version 0.10
 
 DESCRIPTION
     Perinci is a collection of modules for implementing/providing tools
@@ -51,9 +51,9 @@ DESCRIPTION
 
     *   Documentation tools
 
-        See CPAN for Perinci::Package::To::POD, Perinci::Sub::To::POD,
-        Perinci::Sub::To::Text::Usage, Perinci::Sub::To::HTML, and other
-        Perinci::To::* modules.
+        See CPAN for Perinci::To::POD, Perinci::To::Text, Perinci::To::HTML.
+        These document generators support translations based on
+        Locale::Maketext.
 
     *   Function/metadata generators
 
