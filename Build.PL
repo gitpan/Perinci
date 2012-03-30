@@ -17,13 +17,16 @@ my %module_build_args = (
     "Steven Haryanto <stevenharyanto\@gmail.com>"
   ],
   "dist_name" => "Perinci",
-  "dist_version" => "0.11",
+  "dist_version" => "0.12",
   "license" => "perl",
   "module_name" => "Perinci",
   "recommends" => {},
   "recursive_test_files" => 1,
   "requires" => {
     "Class::Inspector" => 0,
+    "Data::Format::Pretty::Console" => "0.12",
+    "Data::Format::Pretty::JSON" => "0.03",
+    "Data::Format::Pretty::YAML" => "0.02",
     "Log::Any" => 0,
     "Module::List" => 0,
     "Perinci::Examples" => "0.08",

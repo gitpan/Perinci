@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.11'; # VERSION
+our $VERSION = '0.12'; # VERSION
 
 # text formats are special. since they are more oriented towards human instead
 # of machine, we remove envelope when status is 200, so users only see content.
@@ -32,11 +32,12 @@ my $format_text = sub {
 };
 
 our %Formats = (
-    yaml          => 'YAML',
-    json          => 'CompactJSON',
-    text          => $format_text,
-    'text-simple' => $format_text,
-    'text-pretty' => $format_text,
+    yaml          => ['YAML', 'text/yaml'],
+    json          => ['CompactJSON', 'application/json'],
+    'json-pretty' => ['JSON', 'application/json'],
+    text          => [$format_text, 'text/plain'],
+    'text-simple' => [$format_text, 'text/plain'],
+    'text-pretty' => [$format_text, 'text/plain'],
 );
 
 sub format {
@@ -46,11 +47,11 @@ sub format {
 
     my $formatter = $Formats{$format} or return undef;
 
-    if (ref($formatter) eq 'CODE') {
-        return $formatter->($format, $res);
+    if (ref($formatter->[0]) eq 'CODE') {
+        return $formatter->[0]->($format, $res);
     } else {
         return Data::Format::Pretty::format_pretty(
-            $res, {module=>$formatter});
+            $res, {module=>$formatter->[0]});
     }
 }
 
@@ -67,7 +68,7 @@ Perinci::Result::Format - Format envelope result
 
 =head1 VERSION
 
-version 0.11
+version 0.12
 
 =head1 SYNOPSIS
 
@@ -77,12 +78,38 @@ This module format enveloped result to YAML, JSON, etc. It uses
 L<Data::Format::Pretty> for the backend. It is used by other Perinci modules
 like L<Perinci::CmdLine> and L<Perinci::Access::HTTP::Server>.
 
+The default supported formats are:
+
+=over 4
+
+=item * json
+
+Using Data::Format::Pretty::YAML.
+
+=item * text-simple
+
+Using Data::Format::Pretty::SimpleText.
+
+=item * text-pretty
+
+Using Data::Format::Pretty::Text.
+
+=item * text
+
+Using Data::Format::Pretty::Console.
+
+=item * yaml
+
+Using Data::Format::Pretty::YAML.
+
+=back
+
 =head1 VARIABLES
 
 =head1 %Perinci::Result::Format::Formats
 
 Contains a mapping between format names and Data::Format::Pretty::* module
-names.
+names + MIME type.
 
 =head1 FUNCTIONS
 
@@ -102,7 +129,7 @@ Then, add your format to %Perinci::Result::Format::Formats hash:
  use Perinci::Result::Format;
 
  # this means format named 'xml' will be handled by Data::Format::Pretty::XML
- $Perinci::Result::Format::Formats{xml} = 'XML';
+ $Perinci::Result::Format::Formats{xml} = ['XML', 'text/xml'];
 
 =head1 SEE ALSO
 
