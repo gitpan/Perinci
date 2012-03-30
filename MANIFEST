@@ -11,11 +11,13 @@ lib/Perinci/Access.pm
 lib/Perinci/Access/Base.pm
 lib/Perinci/Access/InProcess.pm
 lib/Perinci/Access/InProcess/MetaAccessor.pm
+lib/Perinci/Result/Format.pm
 lib/Perinci/Sub/dep/pm.pm
 lib/Perinci/Util.pm
 t/00-compile.t
+t/access-inprocess.t
 t/access.t
-t/inprocess.t
 t/release-pod-coverage.t
 t/release-pod-syntax.t
+t/result-format.t
 t/sub-dep-pm.t
