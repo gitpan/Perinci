@@ -7,7 +7,7 @@ use warnings;
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.12'; # VERSION
+our $VERSION = '0.13'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -45,7 +45,7 @@ sub request {
     $req->{action} = $action;
 
     my $meth = "action_$action";
-    return [502, "Action not implemented"] unless
+    return [502, "Action '$action' not implemented"] unless
         $self->can($meth);
 
     return [400, "Please specify URI"] unless $uri;
@@ -55,7 +55,7 @@ sub request {
     my $res = $self->_before_action($req);
     return $res if $res;
 
-    return [502, "Action not implemented for '$req->{-type}' entity"]
+    return [502, "Action '$action' not implemented for '$req->{-type}' entity"]
         unless $self->{_typeacts}{ $req->{-type} }{ $action };
 
     $res = $self->$meth($req);
@@ -177,7 +177,7 @@ Perinci::Access::Base - Base class for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.12
+version 0.13
 
 =head1 AUTHOR
 
