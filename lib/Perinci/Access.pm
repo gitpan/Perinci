@@ -8,7 +8,7 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.14'; # VERSION
+our $VERSION = '0.15'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -18,8 +18,6 @@ sub new {
     $opts{handlers}{pl}           //= 'Perinci::Access::InProcess';
     $opts{handlers}{http}         //= 'Perinci::Access::HTTP::Client';
     $opts{handlers}{https}        //= 'Perinci::Access::HTTP::Client';
-    $opts{handlers}{'riap+http'}  //= 'Perinci::Access::HTTP::Client';
-    $opts{handlers}{'riap+https'} //= 'Perinci::Access::HTTP::Client';
     $opts{handlers}{'riap+tcp'}   //= 'Perinci::Access::TCP::Client';
 
     $opts{_handler_objs}          //= {};
@@ -93,7 +91,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.14
+version 0.15
 
 =head1 SYNOPSIS
 
@@ -127,8 +125,6 @@ This module provides a convenient wrapper to select appropriate Riap client
  pl:/Foo/Bar           -> InProcess
  http://...            -> HTTP::Client
  https://...           -> HTTP::Client
- riap+http://...       -> HTTP::Client
- riap+https://...      -> HTTP::Client
  riap+tcp://...        -> TCP::Client
 
 You can customize or add supported schemes by providing class name or object to
@@ -152,8 +148,6 @@ they will be require'd and instantiated. The default is:
    pl           => 'Perinci::Access::InProcess',
    http         => 'Perinci::Access::HTTP::Client',
    https        => 'Perinci::Access::HTTP::Client',
-   'riap+http'  => 'Perinci::Access::HTTP::Client',
-   'riap+https' => 'Perinci::Access::HTTP::Client',
    'riap+tcp'   => 'Perinci::Access::TCP::Client',
  }
 

@@ -1,6 +1,6 @@
 package Perinci;
 
-our $VERSION = '0.14'; # VERSION
+our $VERSION = '0.15'; # VERSION
 
 1;
 # ABSTRACT: Collection of Perl modules for Rinci and Riap
@@ -18,7 +18,7 @@ Perinci - Collection of Perl modules for Rinci and Riap
 
 =head1 VERSION
 
-version 0.14
+version 0.15
 
 =head1 DESCRIPTION
 

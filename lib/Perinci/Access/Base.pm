@@ -7,7 +7,7 @@ use warnings;
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.14'; # VERSION
+our $VERSION = '0.15'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -177,7 +177,7 @@ Perinci::Access::Base - Base class for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.14
+version 0.15
 
 =head1 AUTHOR
 
