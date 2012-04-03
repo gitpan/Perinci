@@ -9,7 +9,7 @@ use parent qw(Perinci::Access::Base);
 
 use SHARYANTO::Package::Util qw(package_exists);
 
-our $VERSION = '0.15'; # VERSION
+our $VERSION = '0.16'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -367,7 +367,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.15
+version 0.16
 
 =head1 SYNOPSIS
 
@@ -387,7 +387,7 @@ version 0.15
          {args=>{a=>2, b=>3}, result=>6},
      ],
  };
- sub mult {
+ sub mult2 {
      my %args = @_;
      [200, "OK", $args{a} * $args{b}];
  }
@@ -419,7 +419,7 @@ version 0.15
 
  # list all functions in package
  my $res = $pa->request(list => '/My/Module/', {type=>'function'});
- # -> [200, "OK", ['/My/Module/mult2', '/My/Module/mult2']]
+ # -> [200, "OK", ['/My/Module/mult2', '/My/Module/multn']]
 
  # call function
  my $res = $pa->request(call => '/My/Module/mult2', {args=>{a=>2, b=>3}});
