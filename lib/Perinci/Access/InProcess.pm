@@ -9,7 +9,7 @@ use parent qw(Perinci::Access::Base);
 
 use SHARYANTO::Package::Util qw(package_exists);
 
-our $VERSION = '0.13'; # VERSION
+our $VERSION = '0.14'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -200,7 +200,7 @@ sub action_list {
         $p0 =~ s!/+$!!;
         for my $m (sort keys %$lres) {
             $m =~ s!.+::!!;
-            my $uri = join("", "pm:", $p0, "/", $m, "/");
+            my $uri = join("", "pl:", $p0, "/", $m, "/");
             if ($detail) {
                 push @res, {uri=>$uri, type=>"package"};
             } else {
@@ -214,7 +214,7 @@ sub action_list {
     return $res if $res->[0] != 200;
     my $ma = $res->[2];
     my $spec = $ma->get_all_meta($req);
-    my $base = "pm:/$req->{-module}"; $base =~ s!::!/!g;
+    my $base = "pl:/$req->{-module}"; $base =~ s!::!/!g;
     for (sort keys %$spec) {
         next if /^:/;
         my $uri = join("", $base, "/", $_);
@@ -367,7 +367,7 @@ Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl cod
 
 =head1 VERSION
 
-version 0.13
+version 0.14
 
 =head1 SYNOPSIS
 

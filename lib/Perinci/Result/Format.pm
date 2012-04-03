@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.13'; # VERSION
+our $VERSION = '0.14'; # VERSION
 
 # text formats are special. since they are more oriented towards human instead
 # of machine, we remove envelope when status is 200, so users only see content.
@@ -68,7 +68,7 @@ Perinci::Result::Format - Format envelope result
 
 =head1 VERSION
 
-version 0.13
+version 0.14
 
 =head1 SYNOPSIS
 
