@@ -8,7 +8,7 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.16'; # VERSION
+our $VERSION = '0.17'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -91,7 +91,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.16
+version 0.17
 
 =head1 SYNOPSIS
 
@@ -107,7 +107,8 @@ version 0.16
  $res = $pa->request(call => "/Mod/SubMod/func");
 
  # use Perinci::Access::HTTP::Client
- $res = $pa->request(info => "http://example.com/Sub/ModSub/func");
+ $res = $pa->request(info => "http://example.com/Sub/ModSub/func",
+                     {uri=>'/Sub/ModSub/func'});
 
  # use Perinci::Access::TCP::Client
  $res = $pa->request(meta => "riap+tcp://localhost:7001/Sub/ModSub/");
@@ -156,10 +157,11 @@ special options when instantiating the class.
 
 =back
 
-=head2 $pa->request($action, $uri, \%extra) -> RESP
+=head2 $pa->request($action, $server_url, \%extra) -> RESP
 
-Pass the request to the appropriate Riap client objects (as configured in
-C<handlers> constructor options). RESP is the enveloped result.
+Send Riap request to Riap server. Pass the request to the appropriate Riap
+client (as configured in C<handlers> constructor options). RESP is the enveloped
+result.
 
 =head1 SEE ALSO
 
