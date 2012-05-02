@@ -24,7 +24,7 @@ requires:
   Perinci::Examples: 0.08
   Perinci::Sub::Wrapper: 0.19
   Riap: 1.1.11
-  Rinci: 1.1.11
+  Rinci: 1.1.15
   SHARYANTO::Package::Util: 0
   Test::More: 0.96
   Tie::Cache: 0
@@ -33,4 +33,4 @@ requires:
 resources:
   homepage: http://metacpan.org/release/Perinci
   repository: http://github.com/sharyanto/perl-Perinci
-version: 0.17
+version: 0.18

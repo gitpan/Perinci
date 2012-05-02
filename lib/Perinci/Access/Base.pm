@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.17'; # VERSION
+our $VERSION = '0.18'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -160,7 +160,7 @@ Perinci::Access::Base - Base class for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.17
+version 0.18
 
 =head1 AUTHOR
 

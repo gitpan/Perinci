@@ -8,7 +8,7 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.17'; # VERSION
+our $VERSION = '0.18'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -91,7 +91,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.17
+version 0.18
 
 =head1 SYNOPSIS
 

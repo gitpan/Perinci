@@ -17,7 +17,7 @@ my %module_build_args = (
     "Steven Haryanto <stevenharyanto\@gmail.com>"
   ],
   "dist_name" => "Perinci",
-  "dist_version" => "0.17",
+  "dist_version" => "0.18",
   "license" => "perl",
   "module_name" => "Perinci",
   "recommends" => {},
@@ -33,7 +33,7 @@ my %module_build_args = (
     "Perinci::Examples" => "0.08",
     "Perinci::Sub::Wrapper" => "0.19",
     "Riap" => "1.1.11",
-    "Rinci" => "1.1.11",
+    "Rinci" => "1.1.15",
     "SHARYANTO::Package::Util" => 0,
     "Test::More" => "0.96",
     "Tie::Cache" => 0,

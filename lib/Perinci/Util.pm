@@ -8,7 +8,7 @@ our @EXPORT_OK = qw(
                        declare_function_dep
                );
 
-our $VERSION = '0.17'; # VERSION
+our $VERSION = '0.18'; # VERSION
 
 sub declare_property {
     my %args   = @_;
@@ -37,7 +37,7 @@ sub declare_property {
         } else {
             die "Unknown/unsupported property type: $type";
         }
-        $tpp = $ts->[1]{"[merge:+]keys"}
+        $tpp = $ts->[1]{"[merge+]keys"}
             or die "BUG: Schema structure changed (1)";
         $tpp->{$name}
             and die "Property '$name' is already declared in $type schema";
@@ -69,7 +69,7 @@ sub declare_function_feature {
 
     require Rinci::Schema;
     # XXX merge first or use Perinci::Object, less fragile
-    my $ff = $Rinci::Schema::function->[1]{"[merge:+]keys"}{features}
+    my $ff = $Rinci::Schema::function->[1]{"[merge+]keys"}{features}
         or die "BUG: Schema structure changed (1)";
     $ff->[1]{keys}
         or die "BUG: Schema structure changed (2)";
@@ -89,7 +89,7 @@ sub declare_function_dep {
 
     require Rinci::Schema;
     # XXX merge first or use Perinci::Object, less fragile
-    my $dd = $Rinci::Schema::function->[1]{"[merge:+]keys"}{deps}
+    my $dd = $Rinci::Schema::function->[1]{"[merge+]keys"}{deps}
         or die "BUG: Schema structure changed (1)";
     $dd->[1]{keys}
         or die "BUG: Schema structure changed (2)";
@@ -116,7 +116,7 @@ Perinci::Util - Utility routines
 
 =head1 VERSION
 
-version 0.17
+version 0.18
 
 =head1 AUTHOR
 
