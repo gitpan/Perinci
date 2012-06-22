@@ -8,7 +8,7 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.19'; # VERSION
+our $VERSION = '0.20'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -27,6 +27,8 @@ sub new {
 # convert URI string into URI object
 sub _normalize_uri {
     my ($self, $uri) = @_;
+
+    $uri //= "";
 
     return $uri if blessed($uri);
     if ($uri =~ /^\w+(::\w+)+$/) {
@@ -91,7 +93,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.19
+version 0.20
 
 =head1 SYNOPSIS
 

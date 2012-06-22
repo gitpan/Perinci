@@ -10,7 +10,7 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(time);
 
-our $VERSION = '0.19'; # VERSION
+our $VERSION = '0.20'; # VERSION
 
 my $json = JSON->new->allow_nonref;
 
@@ -821,9 +821,11 @@ sub redo {
 
 sub _discard {
     my ($self, $which, %args) = @_;
-    $self->_wrap(
+    my $wmeth = $which eq 'one' ? '_wrap' : '_wrap2';
+    $self->$wmeth(
+        label => $which,
         args => \%args,
-        tx_status => $which eq 'one' ? 'C' : undef,
+        tx_status => $which eq 'one' ? ['C','U','X'] : undef,
         code => sub {
             my $dbh = $self->{_dbh};
             my $sth;
@@ -832,7 +834,7 @@ sub _discard {
                 $sth->execute($self->{_cur_tx}{str_id});
             } else {
                 $sth = $dbh->prepare(
-                    "SELECT ser_id FROM tx WHERE status='C'");
+                    "SELECT ser_id FROM tx WHERE status IN ('C','U','X')");
                 $sth->execute;
             }
             my @txs;
@@ -872,7 +874,7 @@ Perinci::Tx::Manager - Transaction manager
 
 =head1 VERSION
 
-version 0.19
+version 0.20
 
 =head1 SYNOPSIS
 

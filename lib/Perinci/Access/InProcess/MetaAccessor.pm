@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.19'; # VERSION
+our $VERSION = '0.20'; # VERSION
 
 # static method
 sub get_meta {
@@ -33,7 +33,7 @@ Perinci::Access::InProcess::MetaAccessor - Default class to access metadata in
 
 =head1 VERSION
 
-version 0.19
+version 0.20
 
 =head1 AUTHOR
 
