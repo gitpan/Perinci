@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.21'; # VERSION
+our $VERSION = '0.22'; # VERSION
 
 # text formats are special. since they are more oriented towards human instead
 # of machine, we remove envelope when status is 200, so users only see content.
@@ -12,7 +12,7 @@ our $VERSION = '0.21'; # VERSION
 my $format_text = sub {
     my ($format, $res) = @_;
     if (!defined($res->[2])) {
-        return $res->[0] == 200 ? "" :
+        return $res->[0] =~ /\A(?:200|304)\z/ ? "" :
             "ERROR $res->[0]: $res->[1]" .
                 ($res->[1] =~ /\n\z/ ? "" : "\n");
     }
@@ -68,7 +68,7 @@ Perinci::Result::Format - Format envelope result
 
 =head1 VERSION
 
-version 0.21
+version 0.22
 
 =head1 SYNOPSIS
 

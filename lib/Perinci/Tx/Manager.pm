@@ -10,7 +10,7 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(time);
 
-our $VERSION = '0.21'; # VERSION
+our $VERSION = '0.22'; # VERSION
 
 my $json = JSON->new->allow_nonref;
 
@@ -888,7 +888,7 @@ Perinci::Tx::Manager - Transaction manager
 
 =head1 VERSION
 
-version 0.21
+version 0.22
 
 =head1 SYNOPSIS
 
