@@ -11,7 +11,7 @@ use Scalar::Util qw(blessed);
 use SHARYANTO::Package::Util qw(package_exists);
 use URI;
 
-our $VERSION = '0.20'; # VERSION
+our $VERSION = '0.21'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -659,9 +659,6 @@ sub action_undo {
     my $res = $self->_pre_tx_action($req);
     return $res if $res;
 
-    # XXX currently not following spec: we require tx_id while spec allows
-    # optional tx_id and defaults to last committed transaction by client
-
     $self->{_tx}->undo(
         tx_id => $req->{tx_id},
     );
@@ -676,9 +673,6 @@ sub action_redo {
     my ($self, $req) = @_;
     my $res = $self->_pre_tx_action($req);
     return $res if $res;
-
-    # XXX currently not following spec: we require tx_id while spec allows
-    # optional tx_id and defaults to last undone committed transaction by client
 
     $self->{_tx}->redo(
         tx_id => $req->{tx_id},
@@ -729,7 +723,7 @@ Perinci::Access::InProcess - Handle transaction-/undo-related Riap requests
 
 =head1 VERSION
 
-version 0.20
+version 0.21
 
 =head1 SYNOPSIS
 
