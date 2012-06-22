@@ -1,0 +1,67 @@
+{
+   "abstract" : "Collection of Perl modules for Rinci and Riap",
+   "author" : [
+      "Steven Haryanto <stevenharyanto@gmail.com>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Dist::Zilla version 4.300006, CPAN::Meta::Converter version 2.113640",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "Perinci",
+   "prereqs" : {
+      "build" : {
+         "requires" : {
+            "Module::Build" : "0.3601"
+         }
+      },
+      "configure" : {
+         "requires" : {
+            "Module::Build" : "0.3601"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Class::Inspector" : 0,
+            "DBD::SQLite" : 0,
+            "DBI" : 0,
+            "Data::Format::Pretty" : 0,
+            "Data::Format::Pretty::Console" : "0.12",
+            "Data::Format::Pretty::JSON" : "0.03",
+            "Data::Format::Pretty::YAML" : "0.02",
+            "File::Flock" : 0,
+            "JSON" : 0,
+            "Log::Any" : 0,
+            "Module::List" : 0,
+            "Perinci::Sub::Wrapper" : "0.20",
+            "Riap" : "v1.1.14",
+            "Rinci" : "v1.1.19",
+            "SHARYANTO::Package::Util" : 0,
+            "Tie::Cache" : 0,
+            "URI" : 0,
+            "perl" : "5.010000"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "File::chdir" : 0,
+            "Perinci::Examples" : "0.08",
+            "Setup::File::Symlink" : 0,
+            "Test::More" : "0.96"
+         }
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "homepage" : "http://metacpan.org/release/Perinci",
+      "repository" : {
+         "url" : "http://github.com/sharyanto/perl-Perinci"
+      }
+   },
+   "version" : "0.19"
+}
+

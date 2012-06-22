@@ -4,7 +4,7 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.18'; # VERSION
+our $VERSION = '0.19'; # VERSION
 
 # text formats are special. since they are more oriented towards human instead
 # of machine, we remove envelope when status is 200, so users only see content.
@@ -68,13 +68,13 @@ Perinci::Result::Format - Format envelope result
 
 =head1 VERSION
 
-version 0.18
+version 0.19
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
-This module format enveloped result to YAML, JSON, etc. It uses
+This module formats enveloped result to YAML, JSON, etc. It uses
 L<Data::Format::Pretty> for the backend. It is used by other Perinci modules
 like L<Perinci::CmdLine> and L<Perinci::Access::HTTP::Server>.
 

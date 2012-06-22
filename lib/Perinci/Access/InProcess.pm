@@ -11,23 +11,55 @@ use Scalar::Util qw(blessed);
 use SHARYANTO::Package::Util qw(package_exists);
 use URI;
 
-our $VERSION = '0.18'; # VERSION
+our $VERSION = '0.19'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
+# note: no method should die() because we are called by
+# Perinci::Access::HTTP::Server without extra eval().
+
 sub _init {
+    require Class::Inspector;
     require Tie::Cache;
 
     my ($self) = @_;
-    $self->SUPER::_init();
+
+    # build a list of supported actions for each type of entity
+    my %typeacts = (
+        package  => [],
+        function => [],
+        variable => [],
+    ); # key = type, val = [[ACTION, META], ...]
+
+    my @comacts;
+    for my $meth (@{Class::Inspector->methods(ref $self)}) {
+        next unless $meth =~ /^actionmeta_(.+)/;
+        my $act = $1;
+        my $meta = $self->$meth();
+        for my $type (@{$meta->{applies_to}}) {
+            if ($type eq '*') {
+                push @comacts, [$act, $meta];
+            } else {
+                push @{$typeacts{$type}}, [$act, $meta];
+            }
+        }
+    }
+    for my $type (keys %typeacts) {
+        $typeacts{$type} = { map {$_->[0] => $_->[1]}
+                                 @{$typeacts{$type}}, @comacts };
+    }
+    $self->{_typeacts} = \%typeacts;
 
     # to cache wrapped result
     tie my(%cache), 'Tie::Cache', 100;
     $self->{_cache} = \%cache;
 
-    # attributes
+    $self->{use_tx}                //= 0;
+    $self->{custom_tx_manager}     //= undef;
+
+    # other attributes
     $self->{meta_accessor} //= "Perinci::Access::InProcess::MetaAccessor";
-    $self->{load}          //= 1;
+    $self->{load}                  //= 1;
     $self->{extra_wrapper_args}    //= {};
     $self->{extra_wrapper_convert} //= {};
 }
@@ -59,6 +91,12 @@ sub _get_code_and_meta {
     my $ma = $res->[2];
 
     my $meta = $ma->get_meta($req);
+
+    # supply a default, empty metadata for package, just so we can put $VERSION
+    # into it
+    if (!$meta && $req->{-type} eq 'package') {
+        $meta = {v=>1.1};
+    }
     return [404, "No metadata"] unless $meta;
 
     my $code;
@@ -85,179 +123,6 @@ sub _get_code_and_meta {
         }
     }
     [200, "OK", [$code, $meta]];
-}
-
-sub action_list {
-    require Module::List;
-
-    my ($self, $req) = @_;
-    my $detail = $req->{detail};
-    my $f_type = $req->{type} || "";
-
-    my @res;
-
-    # XXX recursive?
-
-    # get submodules
-    unless ($f_type && $f_type ne 'package') {
-        my $lres = Module::List::list_modules(
-            $req->{-module} ? "$req->{-module}\::" : "",
-            {list_modules=>1});
-        my $p0 = $req->{-path};
-        $p0 =~ s!/+$!!;
-        for my $m (sort keys %$lres) {
-            $m =~ s!.+::!!;
-            my $uri = join("", "pl:", $p0, "/", $m, "/");
-            if ($detail) {
-                push @res, {uri=>$uri, type=>"package"};
-            } else {
-                push @res, $uri;
-            }
-        }
-    }
-
-    # get all entities from this module
-    my $res = $self->_get_meta_accessor($req);
-    return $res if $res->[0] != 200;
-    my $ma = $res->[2];
-    my $spec = $ma->get_all_meta($req);
-    my $base = "pl:/$req->{-module}"; $base =~ s!::!/!g;
-    for (sort keys %$spec) {
-        next if /^:/;
-        my $uri = join("", $base, "/", $_);
-        my $t = $_ =~ /^[%\@\$]/ ? 'variable' : 'function';
-        next if $f_type && $f_type ne $t;
-        if ($detail) {
-            push @res, {
-                #v=>1.1,
-                uri=>$uri, type=>$t,
-            };
-        } else {
-            push @res, $uri;
-        }
-    }
-
-    [200, "OK", \@res];
-}
-
-sub action_meta {
-    my ($self, $req) = @_;
-    return [404, "No metadata for /"] unless $req->{-module};
-    my $res = $self->_get_code_and_meta($req);
-    return $res unless $res->[0] == 200;
-    my (undef, $meta) = @{$res->[2]};
-    [200, "OK", $meta];
-}
-
-sub action_call {
-    my ($self, $req) = @_;
-
-    my $res = $self->_get_code_and_meta($req);
-    return $res unless $res->[0] == 200;
-    my ($code, undef) = @{$res->[2]};
-    my $args = $req->{args} // {};
-    $code->(%$args);
-}
-
-sub action_complete_arg_val {
-    my ($self, $req) = @_;
-    my $arg = $req->{arg} or return [400, "Please specify arg"];
-    my $word = $req->{word} // "";
-
-    my $res = $self->_get_code_and_meta($req);
-    return $res unless $res->[0] == 200;
-    my (undef, $meta) = @{$res->[2]};
-    my $args_p = $meta->{args} // {};
-    my $arg_p = $args_p->{$arg} or return [404, "No such function arg"];
-
-    my $words;
-    eval { # completion sub can die, etc.
-
-        if ($arg_p->{completion}) {
-            $words = $arg_p->{completion}(word=>$word);
-            die "Completion sub does not return array"
-                unless ref($words) eq 'ARRAY';
-            return;
-        }
-
-        my $sch = $arg_p->{schema};
-
-        my ($type, $cs) = @{$sch};
-        if ($cs->{'in'}) {
-            $words = $cs->{'in'};
-            return;
-        }
-
-        if ($type =~ /^int\*?$/) {
-            my $limit = 100;
-            if ($cs->{between} &&
-                    $cs->{between}[0] - $cs->{between}[0] <= $limit) {
-                $words = [$cs->{between}[0] .. $cs->{between}[1]];
-                return;
-            } elsif ($cs->{xbetween} &&
-                    $cs->{xbetween}[0] - $cs->{xbetween}[0] <= $limit) {
-                $words = [$cs->{xbetween}[0]+1 .. $cs->{xbetween}[1]-1];
-                return;
-            } elsif (defined($cs->{min}) && defined($cs->{max}) &&
-                         $cs->{max}-$cs->{min} <= $limit) {
-                $words = [$cs->{min} .. $cs->{max}];
-                return;
-            } elsif (defined($cs->{min}) && defined($cs->{xmax}) &&
-                         $cs->{xmax}-$cs->{min} <= $limit) {
-                $words = [$cs->{min} .. $cs->{xmax}-1];
-                return;
-            } elsif (defined($cs->{xmin}) && defined($cs->{max}) &&
-                         $cs->{max}-$cs->{xmin} <= $limit) {
-                $words = [$cs->{xmin}+1 .. $cs->{max}];
-                return;
-            } elsif (defined($cs->{xmin}) && defined($cs->{xmax}) &&
-                         $cs->{xmax}-$cs->{xmin} <= $limit) {
-                $words = [$cs->{min}+1 .. $cs->{max}-1];
-                return;
-            }
-        }
-
-        $words = [];
-    };
-    return [500, "Completion died: $@"] if $@;
-
-    [200, "OK", [grep /^\Q$word\E/, @$words]];
-}
-
-sub action_child_metas {
-    my ($self, $req) = @_;
-
-    my $res = $self->action_list($req);
-    return $res unless $res->[0] == 200;
-    my $ents = $res->[2];
-
-    my %res;
-    for my $ent (@$ents) {
-        $res = $self->request(meta => $ent);
-        # ignore failed request
-        next unless $res->[0] == 200;
-        $res{$ent} = $res->[2];
-    }
-    [200, "OK", \%res];
-}
-
-sub action_get {
-    no strict 'refs';
-
-    my ($self, $req) = @_;
-    local $req->{-leaf} = $req->{-leaf};
-
-    # extract prefix
-    $req->{-leaf} =~ s/^([%\@\$])//
-        or return [500, "BUG: Unknown variable prefix"];
-    my $prefix = $1;
-    my $name = $req->{-module} . "::" . $req->{-leaf};
-    my $res =
-        $prefix eq '$' ? ${$name} :
-            $prefix eq '@' ? \@{$name} :
-                $prefix eq '%' ? \%{$name} :
-                    undef;
-    [200, "OK", $res];
 }
 
 sub request {
@@ -368,11 +233,490 @@ sub request {
     return [502, "Action '$action' not implemented for ".
                 "'$req->{-type}' entity"]
         unless $self->{_typeacts}{ $req->{-type} }{ $action };
+
+    # check transaction
+
+    my $mmeth = "actionmeta_$action";
     $self->$meth($req);
 }
 
+sub actionmeta_info { +{
+    applies_to => ['*'],
+    summary    => "Get general information on code entity",
+} }
+
+sub action_info {
+    my ($self, $req) = @_;
+    my $res = {
+        v    => 1.1,
+        uri  => $req->{uri}->as_string,
+        type => $req->{-type},
+    };
+    $res->{entity_version} = $req->{-entity_version}
+        if defined $req->{-entity_version};
+    [200, "OK", $res];
+}
+
+sub actionmeta_actions { +{
+    applies_to => ['*'],
+    summary    => "List available actions for code entity",
+} }
+
+sub action_actions {
+    my ($self, $req) = @_;
+    my @res;
+    for my $k (sort keys %{ $self->{_typeacts}{$req->{-type}} }) {
+        my $v = $self->{_typeacts}{$req->{-type}}{$k};
+        if ($req->{detail}) {
+            push @res, {name=>$k, summary=>$v->{summary}};
+        } else {
+            push @res, $k;
+        }
+    }
+    [200, "OK", \@res];
+}
+
+sub actionmeta_list { +{
+    applies_to => ['package'],
+    summary    => "List code entities inside this package code entity",
+} }
+
+sub action_list {
+    require Module::List;
+
+    my ($self, $req) = @_;
+    my $detail = $req->{detail};
+    my $f_type = $req->{type} || "";
+
+    my @res;
+
+    # XXX recursive?
+
+    # get submodules
+    unless ($f_type && $f_type ne 'package') {
+        my $lres = Module::List::list_modules(
+            $req->{-module} ? "$req->{-module}\::" : "",
+            {list_modules=>1});
+        my $p0 = $req->{-path};
+        $p0 =~ s!/+$!!;
+        for my $m (sort keys %$lres) {
+            $m =~ s!.+::!!;
+            my $uri = join("", "pl:", $p0, "/", $m, "/");
+            if ($detail) {
+                push @res, {uri=>$uri, type=>"package"};
+            } else {
+                push @res, $uri;
+            }
+        }
+    }
+
+    # get all entities from this module
+    my $res = $self->_get_meta_accessor($req);
+    return $res if $res->[0] != 200;
+    my $ma = $res->[2];
+    my $spec = $ma->get_all_meta($req);
+    my $base = "pl:/$req->{-module}"; $base =~ s!::!/!g;
+    for (sort keys %$spec) {
+        next if /^:/;
+        my $uri = join("", $base, "/", $_);
+        my $t = $_ =~ /^[%\@\$]/ ? 'variable' : 'function';
+        next if $f_type && $f_type ne $t;
+        if ($detail) {
+            push @res, {
+                #v=>1.1,
+                uri=>$uri, type=>$t,
+            };
+        } else {
+            push @res, $uri;
+        }
+    }
+
+    [200, "OK", \@res];
+}
+
+sub actionmeta_meta { +{
+    applies_to => ['*'],
+    summary    => "Get metadata",
+} }
+
+sub action_meta {
+    my ($self, $req) = @_;
+    return [404, "No metadata for /"] unless $req->{-module};
+    my $res = $self->_get_code_and_meta($req);
+    return $res unless $res->[0] == 200;
+    my (undef, $meta) = @{$res->[2]};
+    [200, "OK", $meta];
+}
+
+sub actionmeta_call { +{
+    applies_to => ['function'],
+    summary    => "Call function",
+} }
+
+sub action_call {
+    my ($self, $req) = @_;
+
+    my $tx;
+    my $res;
+    if ($req->{tx_id}) {
+        $res = $self->_pre_tx_action($req);
+        return $res if $res;
+        $tx = $self->{_tx};
+        $tx->{_tx_id} = $req->{tx_id};
+    }
+
+    $res = $self->_get_code_and_meta($req);
+    return $res unless $res->[0] == 200;
+    my ($code, $meta) = @{$res->[2]};
+    my %args = %{ $req->{args} // {} };
+
+    if ($tx) {
+        my $f   = $meta->{features} // {};
+        my $ftx = $f->{tx} && ($f->{tx}{use} || $f->{tx}{req});
+
+        # if function features does not qualify in transaction, this constitutes
+        # an error and should cause a rollback
+        unless (
+            ($ftx && $f->{undo} && $f->{idempotent}) ||
+                $f->{pure} ||
+                    ($f->{dry_run} && $args{-dry_run})) {
+            my $rbres = $tx->rollback;
+            return [412, "Can't call this function using transaction".
+                        ($rbres->[0] == 200 ?
+                             " (rollbacked)" : " (rollback failed)")];
+        }
+        $args{-tx_manager} = $tx;
+        $args{-undo_action} //= 'do' if $ftx;
+    }
+
+    $res = $code->(%args);
+
+    if ($tx) {
+        if ($res->[0] =~ /^(?:200|304)$/) {
+            # suppress undo_data from function, as per Riap::Tx spec
+            delete $res->[3]{undo_data} if $res->[3];
+        } else {
+            # if function returns non-success, this also constitutes an error in
+            # transaction and should cause a rollback
+            my $rbres = $tx->rollback;
+            $res->[1] .= $rbres->[0] == 200 ?
+                " (rollbacked)" : " (rollback failed)";
+        }
+    }
+
+    $tx->{_tx_id} = undef if $tx;
+
+    $res;
+}
+
+sub actionmeta_complete_arg_val { +{
+    applies_to => ['function'],
+    summary    => "Complete function's argument value"
+} }
+
+sub action_complete_arg_val {
+    my ($self, $req) = @_;
+    my $arg = $req->{arg} or return [400, "Please specify arg"];
+    my $word = $req->{word} // "";
+
+    my $res = $self->_get_code_and_meta($req);
+    return $res unless $res->[0] == 200;
+    my (undef, $meta) = @{$res->[2]};
+    my $args_p = $meta->{args} // {};
+    my $arg_p = $args_p->{$arg} or return [404, "No such function arg"];
+
+    my $words;
+    eval { # completion sub can die, etc.
+
+        if ($arg_p->{completion}) {
+            $words = $arg_p->{completion}(word=>$word);
+            die "Completion sub does not return array"
+                unless ref($words) eq 'ARRAY';
+            return;
+        }
+
+        my $sch = $arg_p->{schema};
+
+        my ($type, $cs) = @{$sch};
+        if ($cs->{'in'}) {
+            $words = $cs->{'in'};
+            return;
+        }
+
+        if ($type =~ /^int\*?$/) {
+            my $limit = 100;
+            if ($cs->{between} &&
+                    $cs->{between}[0] - $cs->{between}[0] <= $limit) {
+                $words = [$cs->{between}[0] .. $cs->{between}[1]];
+                return;
+            } elsif ($cs->{xbetween} &&
+                    $cs->{xbetween}[0] - $cs->{xbetween}[0] <= $limit) {
+                $words = [$cs->{xbetween}[0]+1 .. $cs->{xbetween}[1]-1];
+                return;
+            } elsif (defined($cs->{min}) && defined($cs->{max}) &&
+                         $cs->{max}-$cs->{min} <= $limit) {
+                $words = [$cs->{min} .. $cs->{max}];
+                return;
+            } elsif (defined($cs->{min}) && defined($cs->{xmax}) &&
+                         $cs->{xmax}-$cs->{min} <= $limit) {
+                $words = [$cs->{min} .. $cs->{xmax}-1];
+                return;
+            } elsif (defined($cs->{xmin}) && defined($cs->{max}) &&
+                         $cs->{max}-$cs->{xmin} <= $limit) {
+                $words = [$cs->{xmin}+1 .. $cs->{max}];
+                return;
+            } elsif (defined($cs->{xmin}) && defined($cs->{xmax}) &&
+                         $cs->{xmax}-$cs->{xmin} <= $limit) {
+                $words = [$cs->{min}+1 .. $cs->{max}-1];
+                return;
+            }
+        }
+
+        $words = [];
+    };
+    return [500, "Completion died: $@"] if $@;
+
+    [200, "OK", [grep /^\Q$word\E/, @$words]];
+}
+
+sub actionmeta_child_metas { +{
+    applies_to => ['package'],
+    summary    => "Get metadata of all child entities",
+} }
+
+sub action_child_metas {
+    my ($self, $req) = @_;
+
+    my $res = $self->action_list($req);
+    return $res unless $res->[0] == 200;
+    my $ents = $res->[2];
+
+    my %res;
+    for my $ent (@$ents) {
+        $res = $self->request(meta => $ent);
+        # ignore failed request
+        next unless $res->[0] == 200;
+        $res{$ent} = $res->[2];
+    }
+    [200, "OK", \%res];
+}
+
+sub actionmeta_get { +{
+    applies_to => ['variable'],
+    summary    => "Get value of variable",
+} }
+
+sub action_get {
+    no strict 'refs';
+
+    my ($self, $req) = @_;
+    local $req->{-leaf} = $req->{-leaf};
+
+    # extract prefix
+    $req->{-leaf} =~ s/^([%\@\$])//
+        or return [500, "BUG: Unknown variable prefix"];
+    my $prefix = $1;
+    my $name = $req->{-module} . "::" . $req->{-leaf};
+    my $res =
+        $prefix eq '$' ? ${$name} :
+            $prefix eq '@' ? \@{$name} :
+                $prefix eq '%' ? \%{$name} :
+                    undef;
+    [200, "OK", $res];
+}
+
+sub _pre_tx_action {
+    my ($self, $req) = @_;
+
+    return [501, "Transaction not supported by server"]
+        unless $self->{use_tx};
+
+    # instantiate custom tx manager, per request if necessary
+    if (ref($self->{custom_tx_manager}) eq 'CODE') {
+        eval {
+            $self->{_tx} = $self->{custom_tx_manager}->($self);
+            die $self->{_tx} unless blessed($self->{_tx});
+        };
+        return [500, "Can't initialize custom tx manager: $self->{_tx}: $@"]
+            if $@;
+    } elsif (!blessed($self->{_tx})) {
+        my $txm_cl = $self->{custom_tx_manager} // "Perinci::Tx::Manager";
+        my $txm_cl_p = $txm_cl; $txm_cl_p =~ s!::!/!g; $txm_cl_p .= ".pm";
+        eval {
+            require $txm_cl_p;
+            $self->{_tx} = $txm_cl->new(pa => $self);
+            die $self->{_tx} unless blessed($self->{_tx});
+        };
+        return [500, "Can't initialize tx manager ($txm_cl): $@"] if $@;
+    }
+
+    return;
+}
+
+sub actionmeta_begin_tx { +{
+    applies_to => ['*'],
+    summary    => "Start a new transaction",
+} }
+
+sub action_begin_tx {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    $self->{_tx}->begin(
+        tx_id   => $req->{tx_id},
+        summary => $req->{summary},
+    );
+}
+
+sub actionmeta_commit_tx { +{
+    applies_to => ['*'],
+    summary    => "Commit a transaction",
+} }
+
+sub action_commit_tx {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    $self->{_tx}->commit(
+        tx_id  => $req->{tx_id},
+    );
+}
+
+sub actionmeta_savepoint_tx { +{
+    applies_to => ['*'],
+    summary    => "Create a savepoint in a transaction",
+} }
+
+sub action_savepoint_tx {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    $self->{_tx}->savepoint(
+        tx_id => $req->{tx_id},
+        sp    => $req->{tx_spid},
+    );
+}
+
+sub actionmeta_release_tx_savepoint { +{
+    applies_to => ['*'],
+    summary    => "Release a transaction savepoint",
+} }
+
+sub action_release_tx_savepoint {
+    my ($self, $req) =\ @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    $self->{_tx}->release_savepoint(
+        tx_id => $req->{tx_id},
+        sp    => $req->{tx_spid},
+    );
+}
+
+sub actionmeta_rollback_tx { +{
+    applies_to => ['*'],
+    summary    => "Rollback a transaction (optionally to a savepoint)",
+} }
+
+sub action_rollback_tx {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    $self->{_tx}->rollback(
+        tx_id => $req->{tx_id},
+        sp    => $req->{tx_spid},
+    );
+}
+
+sub actionmeta_list_txs { +{
+    applies_to => ['*'],
+    summary    => "List transactions",
+} }
+
+sub action_list_txs {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    $self->{_tx}->list(
+        detail    => $req->{detail},
+        tx_status => $req->{tx_status},
+        tx_id     => $req->{tx_id},
+    );
+}
+
+sub actionmeta_undo { +{
+    applies_to => ['*'],
+    summary    => "Undo a committed transaction",
+} }
+
+sub action_undo {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    # XXX currently not following spec: we require tx_id while spec allows
+    # optional tx_id and defaults to last committed transaction by client
+
+    $self->{_tx}->undo(
+        tx_id => $req->{tx_id},
+    );
+}
+
+sub actionmeta_redo { +{
+    applies_to => ['*'],
+    summary    => "Redo an undone committed transaction",
+} }
+
+sub action_redo {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    # XXX currently not following spec: we require tx_id while spec allows
+    # optional tx_id and defaults to last undone committed transaction by client
+
+    $self->{_tx}->redo(
+        tx_id => $req->{tx_id},
+    );
+}
+
+sub actionmeta_discard_tx { +{
+    applies_to => ['*'],
+    summary    => "Discard (forget) a committed transaction",
+} }
+
+sub action_discard_tx {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    $self->{_tx}->discard(
+        tx_id => $req->{tx_id},
+    );
+}
+
+sub actionmeta_discard_all_txs { +{
+    applies_to => ['*'],
+    summary    => "Discard (forget) all committed transactions",
+} }
+
+sub action_discard_all_txs {
+    my ($self, $req) = @_;
+    my $res = $self->_pre_tx_action($req);
+    return $res if $res;
+
+    $self->{_tx}->discard_all(
+        # XXX select client
+    );
+}
+
 1;
-# ABSTRACT: Use Rinci access protocol (Riap) to access Perl code
+# ABSTRACT: Handle transaction-/undo-related Riap requests
 
 
 
@@ -381,11 +725,11 @@ __END__
 
 =head1 NAME
 
-Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl code
+Perinci::Access::InProcess - Handle transaction-/undo-related Riap requests
 
 =head1 VERSION
 
-version 0.18
+version 0.19
 
 =head1 SYNOPSIS
 
@@ -455,12 +799,26 @@ already accessible from Perl like functions and metadata (in C<%SPEC>). Indeed,
 if you do not need Riap, you can access your module just like any normal Perl
 module.
 
-The abstraction provides some benefits, still. For example, you can actually
-place metadata not in C<%SPEC> but elsewhere, like in another file or even
-database, or even by merging from several sources. By using this module, you
-don't have to change client code. This class also does some function wrapping to
-convert argument passing style or produce result envelope, so you get a
-consistent interface.
+But Perinci::Access::InProcess offers several benefits:
+
+=over 4
+
+=item * Custom location of metadata
+
+Metadata can be placed not in C<%SPEC> but elsewhere, like in another file or
+even database, or even by merging from several sources.
+
+=item * Function wrapping
+
+Can be used to convert argument passing style or produce result envelope, so you
+get a consistent interface.
+
+=item * Transaction/undo
+
+This class implements L<Riap::Transaction>. See
+L<Perinci::Access::InProcess::Tx> for more details.
+
+=back
 
 =head2 Location of metadata
 
@@ -480,7 +838,14 @@ The default accessor class is L<Perinci::Access::InProcess::MetaAccessor>.
 Alternatively, you can simply devise your own system to retrieve metadata which
 you can put in C<%SPEC> at the end.
 
-=for Pod::Coverage ^action_.+
+=head1 SEE ALSO
+
+The default implementation of transaction manager: L<Perinci::Tx::Manager>
+
+1;
+# ABSTRACT: Use Rinci access protocol (Riap) to access Perl code
+
+=for Pod::Coverage ^actionmeta_.+ ^action_.+
 
 =head1 METHODS
 
@@ -492,7 +857,7 @@ Instantiate object. Known attributes:
 
 =item * meta_accessor => STR (default 'Perinci::Access::InProcess::MetaAccessor')
 
-=item * load => STR (default 1)
+=item * load => BOOL (default 1)
 
 Whether attempt to load modules using C<require>.
 
@@ -514,6 +879,24 @@ If set, will be passed to L<Perinci::Sub::Wrapper> wrap_sub()'s C<convert>
 argument when wrapping subroutines.
 
 Some applications of this include: changing C<default_lang> of metadata.
+
+=item * use_tx => BOOL (default 0)
+
+Whether to allow transaction requests from client. Since this can cause the
+server to store transaction/undo data, this must be explicitly allowed.
+
+=item * custom_tx_manager => STR|CODE
+
+Can be set to a string (class name) or a code that is expected to return a
+transaction manager class.
+
+By default, L<Perinci::Tx::Manager> is instantiated and maintained (not
+reinstantiated on every request), but if C<custom_tx_manager> is a coderef, it
+will be called on each request to get transaction manager.
+
+This can be used to instantiate L<Perinci::Tx::Manager> in a custom way, e.g.
+specifying per-user transaction data directory and limits, which needs to be
+done on a per-request basis.
 
 =back
 

@@ -7,7 +7,11 @@ use Module::Build 0.3601;
 
 my %module_build_args = (
   "build_requires" => {
-    "Module::Build" => "0.3601"
+    "File::chdir" => 0,
+    "Module::Build" => "0.3601",
+    "Perinci::Examples" => "0.08",
+    "Setup::File::Symlink" => 0,
+    "Test::More" => "0.96"
   },
   "configure_requires" => {
     "Module::Build" => "0.3601"
@@ -17,25 +21,27 @@ my %module_build_args = (
     "Steven Haryanto <stevenharyanto\@gmail.com>"
   ],
   "dist_name" => "Perinci",
-  "dist_version" => "0.18",
+  "dist_version" => "0.19",
   "license" => "perl",
   "module_name" => "Perinci",
   "recommends" => {},
   "recursive_test_files" => 1,
   "requires" => {
     "Class::Inspector" => 0,
+    "DBD::SQLite" => 0,
+    "DBI" => 0,
     "Data::Format::Pretty" => 0,
     "Data::Format::Pretty::Console" => "0.12",
     "Data::Format::Pretty::JSON" => "0.03",
     "Data::Format::Pretty::YAML" => "0.02",
+    "File::Flock" => 0,
+    "JSON" => 0,
     "Log::Any" => 0,
     "Module::List" => 0,
-    "Perinci::Examples" => "0.08",
-    "Perinci::Sub::Wrapper" => "0.19",
-    "Riap" => "1.1.11",
-    "Rinci" => "1.1.15",
+    "Perinci::Sub::Wrapper" => "0.20",
+    "Riap" => "1.1.14",
+    "Rinci" => "1.1.19",
     "SHARYANTO::Package::Util" => 0,
-    "Test::More" => "0.96",
     "Tie::Cache" => 0,
     "URI" => 0,
     "perl" => "5.010000"

@@ -8,7 +8,7 @@ our @EXPORT_OK = qw(
                        declare_function_dep
                );
 
-our $VERSION = '0.18'; # VERSION
+our $VERSION = '0.19'; # VERSION
 
 sub declare_property {
     my %args   = @_;
@@ -116,7 +116,7 @@ Perinci::Util - Utility routines
 
 =head1 VERSION
 
-version 0.18
+version 0.19
 
 =head1 AUTHOR
 
