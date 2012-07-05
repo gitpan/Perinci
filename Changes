@@ -1,5 +1,12 @@
 Revision history for Perinci
 
+0.24     2012-07-05 (SHARYANTO)
+
+         - txm: Add _meta table (containing 'v' setting) for supporting db
+           schema evolution. I'm going to pretend all tx db's are created using
+           this version with v=1.
+
+
 0.23     2012-06-28 (SHARYANTO)
 
          [ENHANCEMENTS]
@@ -8,8 +15,6 @@ Revision history for Perinci
 
          - Log Riap requests and responses (controlled by $Log_Requests and
            $Log_Responses, default off)
-
-         - Don't show error message for 304 status.
 
 
 0.22     2012-06-22 (SHARYANTO)
