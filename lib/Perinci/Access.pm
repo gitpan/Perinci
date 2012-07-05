@@ -8,7 +8,10 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use URI;
 
-our $VERSION = '0.22'; # VERSION
+our $Log_Requests  = $ENV{LOG_RIAP_REQUESTS}  // 0;
+our $Log_Responses = $ENV{LOG_RIAP_RESPONSES} // 0;
+
+our $VERSION = '0.23'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -77,7 +80,16 @@ sub request {
         }
     }
 
-    $self->{_handler_objs}{$sch}->request($action, $uri, $extra);
+    if ($Log_Requests && $log->is_trace) {
+        $log->tracef(
+            "Riap request (%s): %s -> %s (%s)",
+            ref($self->{_handler_objs}{$sch}), $action, "$uri", $extra);
+    }
+    my $res = $self->{_handler_objs}{$sch}->request($action, $uri, $extra);
+    if ($Log_Responses && $log->is_trace) {
+        $log->tracef("Riap response: %s", $res);
+    }
+    $res;
 }
 
 1;
@@ -93,7 +105,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.22
+version 0.23
 
 =head1 SYNOPSIS
 
@@ -132,6 +144,18 @@ This module provides a convenient wrapper to select appropriate Riap client
 
 You can customize or add supported schemes by providing class name or object to
 the B<handlers> attribute (see its documentation for more details).
+
+=head1 VARIABLES
+
+=head2 $Log_Requests (BOOL)
+
+Whether to log every Riap request. Default is from environment variable
+LOG_RIAP_REQUESTS, or false. Logging is done with L<Log::Any> at trace level.
+
+=head2 $Log_Responses (BOOL)
+
+Whether to log every Riap response. Default is from environment variable
+LOG_RIAP_RESPONSES, or false. Logging is done with L<Log::Any> at trace level.
 
 =head1 METHODS
 

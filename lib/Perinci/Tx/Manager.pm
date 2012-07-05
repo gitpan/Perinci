@@ -10,7 +10,7 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(time);
 
-our $VERSION = '0.22'; # VERSION
+our $VERSION = '0.23'; # VERSION
 
 my $json = JSON->new->allow_nonref;
 
@@ -888,7 +888,7 @@ Perinci::Tx::Manager - Transaction manager
 
 =head1 VERSION
 
-version 0.22
+version 0.23
 
 =head1 SYNOPSIS
 
@@ -1024,6 +1024,10 @@ Will return (in enveloped response) an array of redo steps, e.g. [200, "OK",
 [["step2"], ["step1"], ...]] for the particular call.
 
 Arguments: tx_id, call_id.
+
+=head2 $tx->get_trash_dir => RESP
+
+=head2 $tx->get_tmp_dir => RESP
 
 =head2 $tx->commit(%args) => RESP
 

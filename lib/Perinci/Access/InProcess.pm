@@ -11,7 +11,7 @@ use Scalar::Util qw(blessed);
 use SHARYANTO::Package::Util qw(package_exists);
 use URI;
 
-our $VERSION = '0.22'; # VERSION
+our $VERSION = '0.23'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -379,7 +379,8 @@ sub action_call {
     # -undo_trash_dir under dry_run for testing (e.g. setup_symlink()).
     if (!$tx && $ftx && $dry && !$args{-undo_trash_dir}) {
         if ($self->{_tx}) {
-            $args{-undo_trash_dir} = $self->{_tx}->get_trash_dir;
+            $res = $self->{_tx}->get_trash_dir;
+            $args{-undo_trash_dir} = $res->[2]; # XXX if error?
         } else {
             $args{-undo_trash_dir} = "/tmp"; # TMP
         }
@@ -736,7 +737,7 @@ Perinci::Access::InProcess - Handle transaction-/undo-related Riap requests
 
 =head1 VERSION
 
-version 0.22
+version 0.23
 
 =head1 SYNOPSIS
 

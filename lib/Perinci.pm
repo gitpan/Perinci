@@ -1,12 +1,9 @@
 package Perinci;
 
-our $VERSION = '0.22'; # VERSION
+our $VERSION = '0.23'; # VERSION
 
 1;
 # ABSTRACT: Collection of Perl modules for Rinci and Riap
-
-
-
 
 
 __END__
@@ -18,7 +15,17 @@ Perinci - Collection of Perl modules for Rinci and Riap
 
 =head1 VERSION
 
-version 0.22
+version 0.23
+
+=head1 SYNOPSIS
+
+ use Perinci::Easy qw(defsub);
+
+ # define a subroutine
+ defsub name=>'foo', summary=>'Blah ...',
+     code=>sub {
+         ...
+     };
 
 =head1 DESCRIPTION
 
