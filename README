@@ -2,16 +2,7 @@ NAME
     Perinci - Collection of Perl modules for Rinci and Riap
 
 VERSION
-    version 0.24
-
-SYNOPSIS
-     use Perinci::Easy qw(defsub);
-
-     # define a subroutine
-     defsub name=>'foo', summary=>'Blah ...',
-         code=>sub {
-             ...
-         };
+    version 0.25
 
 DESCRIPTION
     Perinci is a collection of modules for implementing/providing tools
@@ -42,9 +33,10 @@ DESCRIPTION
         pair of client/server library to access Perl modules/functions using
         Riap over HTTP, implementing the Riap::HTTP specification.
 
-        Perinci::Access::TCP::Client and Perinci::Access::TCP::Server is a
-        pair of client/server library to access Perl modules/functions using
-        Riap over TCP, implementing the Riap::TCP specification.
+        Perinci::Access::Simple::Client,
+        Perinci::Access::Simple::Server::Socket,
+        Perinci::Access::Simple::Server::Pipe are client/server libraries
+        that implement Riap::Simple, either via TCP/Unix socket or piping.
 
         Perinci::Access is a simple wrapper for all Riap clients, you give
         it a URL/module name/whatever and it will try to select the
@@ -54,9 +46,8 @@ DESCRIPTION
 
         Perinci::CmdLine is an extensible and featureful command-line
         library to create command-line programs and API clients. Features
-        include: transparent remote access (thanks to Riap::HTTP),
-        command-line options parsing, --help message, shell tab completion,
-        etc.
+        include: transparent remote access (thanks to Riap), command-line
+        options parsing, --help message, shell tab completion, etc.
 
     *   Documentation tools
 
@@ -78,24 +69,22 @@ DESCRIPTION
 
         See CPAN for more Perinci::* modules.
 
-    To get started, read Perinci::Access::InProcess which will tell you on
-    how to write your functions and where to put the metadata. Or, if you
-    only want to access existing code/metadata, head over to Perinci::Access
-    or Perinci::CmdLine.
-
-    To declare and implement a new function metadata property, see example
-    in one of the "Perinci-Sub-property-*" modules, like
-    Perinci::Sub::property::timeout.
-
-    To declare and implement a new function feature, see example in one of
-    the "Perinci-Sub-feature-*" modules, like Perinci::Sub::feature::foo.
-
-    To declare and implement a new function dependency type, see example in
-    one of the "Perinci-Sub-dep-*" modules, like Perinci::Sub::dep::pm.
+    To get started, read Perinci::Manual::Tutorial.
 
 STATUS
-    Some modules have been implemented, some (including important ones) have
-    not. See details on CPAN.
+    Most modules have been implemented. It is safe to start putting metadata
+    to your code. However, some have not:
+
+    *   Argument validation
+
+        Perinci::Sub::Wrapper still does not generate code to validate
+        function arguments. This is because the Sah schema is still somewhat
+        in flux and largely unimplemented.
+
+        I usually do some manual and minimal argument validation manually in
+        the function body. They can be removed once the wrapper generates
+        validation code, or left as-is (sometimes the function is used
+        unwrapped).
 
 FAQ
   What does Perinci mean?
@@ -105,6 +94,12 @@ FAQ
 
 SEE ALSO
     Rinci
+
+DESCRIPTION
+    This module has Rinci metadata.
+
+FUNCTIONS
+    None are exported by default, but they are exportable.
 
 AUTHOR
     Steven Haryanto <stevenharyanto@gmail.com>

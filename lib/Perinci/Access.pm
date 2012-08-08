@@ -11,7 +11,7 @@ use URI;
 our $Log_Requests  = $ENV{LOG_RIAP_REQUESTS}  // 0;
 our $Log_Responses = $ENV{LOG_RIAP_RESPONSES} // 0;
 
-our $VERSION = '0.24'; # VERSION
+our $VERSION = '0.25'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -21,7 +21,15 @@ sub new {
     $opts{handlers}{pl}           //= 'Perinci::Access::InProcess';
     $opts{handlers}{http}         //= 'Perinci::Access::HTTP::Client';
     $opts{handlers}{https}        //= 'Perinci::Access::HTTP::Client';
-    $opts{handlers}{'riap+tcp'}   //= 'Perinci::Access::TCP::Client';
+    $opts{handlers}{'riap+tcp'}   //= 'Perinci::Access::Simple::Client';
+    $opts{handlers}{'riap+unix'}  //= 'Perinci::Access::Simple::Client';
+    $opts{handlers}{'riap+pipe'}  //= 'Perinci::Access::Simple::Client';
+
+    my @schemes = keys %{$opts{handlers}};
+    for (@schemes) {
+        next if /\A(riap|pl|http|https|riap\+tcp|riap\+unix|riap\+pipe)\z/;
+        $log->warnf("Unknown Riap scheme %s", $_);
+    }
 
     $opts{_handler_objs}          //= {};
     bless \%opts, $class;
@@ -105,7 +113,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.24
+version 0.25
 
 =head1 SYNOPSIS
 
@@ -124,7 +132,7 @@ version 0.24
  $res = $pa->request(info => "http://example.com/Sub/ModSub/func",
                      {uri=>'/Sub/ModSub/func'});
 
- # use Perinci::Access::TCP::Client
+ # use Perinci::Access::Simple::Client
  $res = $pa->request(meta => "riap+tcp://localhost:7001/Sub/ModSub/");
 
  # dies, unknown scheme
@@ -140,7 +148,9 @@ This module provides a convenient wrapper to select appropriate Riap client
  pl:/Foo/Bar           -> InProcess
  http://...            -> HTTP::Client
  https://...           -> HTTP::Client
- riap+tcp://...        -> TCP::Client
+ riap+tcp://...        -> Simple::Client
+ riap+unix://...       -> Simple::Client
+ riap+pipe://...       -> Simple::Client
 
 You can customize or add supported schemes by providing class name or object to
 the B<handlers> attribute (see its documentation for more details).
@@ -175,7 +185,9 @@ they will be require'd and instantiated. The default is:
    pl           => 'Perinci::Access::InProcess',
    http         => 'Perinci::Access::HTTP::Client',
    https        => 'Perinci::Access::HTTP::Client',
-   'riap+tcp'   => 'Perinci::Access::TCP::Client',
+   'riap+tcp'   => 'Perinci::Access::Simple::Client',
+   'riap+unix'  => 'Perinci::Access::Simple::Client',
+   'riap+pipe'  => 'Perinci::Access::Simple::Client',
  }
 
 Objects can be given instead of class names. This is used if you need to pass
@@ -192,6 +204,16 @@ result.
 =head1 SEE ALSO
 
 L<Perinci>, L<Riap>
+
+=head1 DESCRIPTION
+
+
+This module has L<Rinci> metadata.
+
+=head1 FUNCTIONS
+
+
+None are exported by default, but they are exportable.
 
 =head1 AUTHOR
 

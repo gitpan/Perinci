@@ -1,6 +1,6 @@
 package Perinci;
 
-our $VERSION = '0.24'; # VERSION
+our $VERSION = '0.25'; # VERSION
 
 1;
 # ABSTRACT: Collection of Perl modules for Rinci and Riap
@@ -15,17 +15,7 @@ Perinci - Collection of Perl modules for Rinci and Riap
 
 =head1 VERSION
 
-version 0.24
-
-=head1 SYNOPSIS
-
- use Perinci::Easy qw(defsub);
-
- # define a subroutine
- defsub name=>'foo', summary=>'Blah ...',
-     code=>sub {
-         ...
-     };
+version 0.25
 
 =head1 DESCRIPTION
 
@@ -56,9 +46,9 @@ L<Perinci::Access::HTTP::Client> and L<Perinci::Access::HTTP::Server> is a pair
 of client/server library to access Perl modules/functions using Riap over HTTP,
 implementing the L<Riap::HTTP> specification.
 
-L<Perinci::Access::TCP::Client> and L<Perinci::Access::TCP::Server> is a pair of
-client/server library to access Perl modules/functions using Riap over TCP,
-implementing the L<Riap::TCP> specification.
+L<Perinci::Access::Simple::Client>, L<Perinci::Access::Simple::Server::Socket>,
+L<Perinci::Access::Simple::Server::Pipe> are client/server libraries that
+implement L<Riap::Simple>, either via TCP/Unix socket or piping.
 
 L<Perinci::Access> is a simple wrapper for all Riap clients, you give it a
 URL/module name/whatever and it will try to select the appropriate Riap client
@@ -68,8 +58,8 @@ for you.
 
 L<Perinci::CmdLine> is an extensible and featureful command-line library to
 create command-line programs and API clients. Features include: transparent
-remote access (thanks to Riap::HTTP), command-line options parsing, --help
-message, shell tab completion, etc.
+remote access (thanks to Riap), command-line options parsing, --help message,
+shell tab completion, etc.
 
 =item * Documentation tools
 
@@ -92,24 +82,26 @@ See CPAN for more Perinci::* modules.
 
 =back
 
-To get started, read L<Perinci::Access::InProcess> which will tell you on how to
-write your functions and where to put the metadata. Or, if you only want to
-access existing code/metadata, head over to L<Perinci::Access> or
-L<Perinci::CmdLine>.
-
-To declare and implement a new function metadata property, see example in one of
-the C<Perinci-Sub-property-*> modules, like L<Perinci::Sub::property::timeout>.
-
-To declare and implement a new function feature, see example in one of the
-C<Perinci-Sub-feature-*> modules, like L<Perinci::Sub::feature::foo>.
-
-To declare and implement a new function dependency type, see example in one of
-the C<Perinci-Sub-dep-*> modules, like L<Perinci::Sub::dep::pm>.
+To get started, read L<Perinci::Manual::Tutorial>.
 
 =head1 STATUS
 
-Some modules have been implemented, some (including important ones) have not.
-See details on CPAN.
+Most modules have been implemented. It is safe to start putting metadata to your
+code. However, some have not:
+
+=over 4
+
+=item * Argument validation
+
+L<Perinci::Sub::Wrapper> still does not generate code to validate function
+arguments. This is because the L<Sah> schema is still somewhat in flux and
+largely unimplemented.
+
+I usually do some manual and minimal argument validation manually in the
+function body. They can be removed once the wrapper generates validation code,
+or left as-is (sometimes the function is used unwrapped).
+
+=back
 
 =head1 FAQ
 
@@ -121,6 +113,16 @@ detail. It can also be an abbreviation for "B<Pe>rl implementation of B<Rinci>".
 =head1 SEE ALSO
 
 L<Rinci>
+
+=head1 DESCRIPTION
+
+
+This module has L<Rinci> metadata.
+
+=head1 FUNCTIONS
+
+
+None are exported by default, but they are exportable.
 
 =head1 AUTHOR
 

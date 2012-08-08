@@ -7,11 +7,12 @@ use Log::Any '$log';
 
 use parent qw(Perinci::Access::Base);
 
-use Scalar::Util qw(blessed);
+use Perinci::Util qw(get_package_meta_accessor);
+use Scalar::Util qw(blessed reftype);
 use SHARYANTO::Package::Util qw(package_exists);
 use URI;
 
-our $VERSION = '0.24'; # VERSION
+our $VERSION = '0.25'; # VERSION
 
 our $re_mod = qr/\A[A-Za-z_][A-Za-z_0-9]*(::[A-Za-z_][A-Za-z_0-9]*)*\z/;
 
@@ -58,7 +59,7 @@ sub _init {
     $self->{custom_tx_manager}     //= undef;
 
     # other attributes
-    $self->{meta_accessor} //= "Perinci::Access::InProcess::MetaAccessor";
+    $self->{meta_accessor} //= "Perinci::MetaAccessor::Default";
     $self->{load}                  //= 1;
     $self->{extra_wrapper_args}    //= {};
     $self->{extra_wrapper_convert} //= {};
@@ -67,15 +68,10 @@ sub _init {
 sub _get_meta_accessor {
     my ($self, $req) = @_;
 
-    no strict 'refs';
-    my $ma = ${ $req->{-module} . "::PERINCI_META_ACCESSOR" } //
-        $self->{meta_accessor};
-    my $ma_p = $ma;
-    $ma_p =~ s!::!/!g;
-    $ma_p .= ".pm";
-    eval { require $ma_p };
-    return [500, "Can't load meta accessor module $ma"] if $@;
-    [200, "OK", $ma];
+    get_package_meta_accessor(
+        package => $req->{-module},
+        default_class => $self->{meta_accessor}
+    );
 }
 
 sub _get_code_and_meta {
@@ -90,7 +86,7 @@ sub _get_code_and_meta {
     return $res if $res->[0] != 200;
     my $ma = $res->[2];
 
-    my $meta = $ma->get_meta($req);
+    my $meta = $ma->get_meta($req->{-module}, $req->{-leaf});
 
     # supply a default, empty metadata for package, just so we can put $VERSION
     # into it
@@ -100,10 +96,12 @@ sub _get_code_and_meta {
     return [404, "No metadata"] unless $meta;
 
     my $code;
+    my $extra;
     if ($req->{-type} eq 'function') {
         $code = \&{$name};
         my $wres = Perinci::Sub::Wrapper::wrap_sub(
-            sub=>$code, meta=>$meta,
+            sub=>$code, sub_name=>$name, meta=>$meta,
+            forbid_tags => ['die'],
             %{$self->{extra_wrapper_args}},
             convert=>{
                 args_as=>'hash', result_naked=>0,
@@ -112,9 +110,17 @@ sub _get_code_and_meta {
         return [500, "Can't wrap function: $wres->[0] - $wres->[1]"]
             unless $wres->[0] == 200;
         $code = $wres->[2]{sub};
-        $meta = $wres->[2]{meta};
 
-        $self->{_cache}{$name} = [$code, $meta];
+        $extra = {
+            # store some info about the old meta, no need to store all for
+            # efficiency
+            orig_meta=>{
+                result_naked=>$meta->{result_naked},
+                args_as=>$meta->{args_as},
+            },
+        };
+        $meta = $wres->[2]{meta};
+        $self->{_cache}{$name} = [$code, $meta, $extra];
     }
     unless (defined $meta->{entity_version}) {
         my $ver = ${ $req->{-module} . "::VERSION" };
@@ -122,7 +128,7 @@ sub _get_code_and_meta {
             $meta->{entity_version} = $ver;
         }
     }
-    [200, "OK", [$code, $meta]];
+    [200, "OK", [$code, $meta, $extra]];
 }
 
 sub request {
@@ -314,7 +320,7 @@ sub action_list {
     my $res = $self->_get_meta_accessor($req);
     return $res if $res->[0] != 200;
     my $ma = $res->[2];
-    my $spec = $ma->get_all_meta($req);
+    my $spec = $ma->get_all_metas($req->{-module});
     my $base = "pl:/$req->{-module}"; $base =~ s!::!/!g;
     for (sort keys %$spec) {
         next if /^:/;
@@ -344,8 +350,8 @@ sub action_meta {
     return [404, "No metadata for /"] unless $req->{-module};
     my $res = $self->_get_code_and_meta($req);
     return $res unless $res->[0] == 200;
-    my (undef, $meta) = @{$res->[2]};
-    [200, "OK", $meta];
+    my (undef, $meta, $extra) = @{$res->[2]};
+    [200, "OK", $meta, {orig_meta=>$extra->{orig_meta}}];
 }
 
 sub actionmeta_call { +{
@@ -506,13 +512,15 @@ sub action_child_metas {
     my $ents = $res->[2];
 
     my %res;
+    my %om;
     for my $ent (@$ents) {
         $res = $self->request(meta => $ent);
         # ignore failed request
         next unless $res->[0] == 200;
         $res{$ent} = $res->[2];
+        $om{$ent}  = $res->[3]{orig_meta};
     }
-    [200, "OK", \%res];
+    [200, "OK", \%res, {orig_metas=>\%om}];
 }
 
 sub actionmeta_get { +{
@@ -546,7 +554,7 @@ sub _pre_tx_action {
         unless $self->{use_tx};
 
     # instantiate custom tx manager, per request if necessary
-    if (ref($self->{custom_tx_manager}) eq 'CODE') {
+    if (reftype($self->{custom_tx_manager}) eq 'CODE') {
         eval {
             $self->{_tx} = $self->{custom_tx_manager}->($self);
             die $self->{_tx} unless blessed($self->{_tx});
@@ -724,7 +732,7 @@ sub action_discard_all_txs {
 }
 
 1;
-# ABSTRACT: Handle transaction-/undo-related Riap requests
+# ABSTRACT: Use Rinci access protocol (Riap) to access Perl code
 
 
 
@@ -733,11 +741,11 @@ __END__
 
 =head1 NAME
 
-Perinci::Access::InProcess - Handle transaction-/undo-related Riap requests
+Perinci::Access::InProcess - Use Rinci access protocol (Riap) to access Perl code
 
 =head1 VERSION
 
-version 0.24
+version 0.25
 
 =head1 SYNOPSIS
 
@@ -831,7 +839,7 @@ L<Perinci::Access::InProcess::Tx> for more details.
 =head2 Location of metadata
 
 By default, the metadata should be put in C<%SPEC> package variable, in a key
-with the same name as the URI path leaf (use C<:package>) for the package
+with the same name as the URI path leaf (use C<:package> for the package
 itself). For example, metadata for C</Foo/Bar/$var> should be put in
 C<$Foo::Bar::SPEC{'$var'}>, C</Foo/Bar/> in C<$Foo::Bar::SPEC{':package'}>. The
 metadata for the top-level namespace (C</>) should be put in
@@ -842,16 +850,9 @@ C<'Custom_Class'> to constructor argument, or set this in your module:
 
  our $PERINCI_META_ACCESSOR = 'Custom::Class';
 
-The default accessor class is L<Perinci::Access::InProcess::MetaAccessor>.
-Alternatively, you can simply devise your own system to retrieve metadata which
-you can put in C<%SPEC> at the end.
-
-=head1 SEE ALSO
-
-The default implementation of transaction manager: L<Perinci::Tx::Manager>
-
-1;
-# ABSTRACT: Use Rinci access protocol (Riap) to access Perl code
+The default accessor class is L<Perinci::MetaAccessor::Default>. Alternatively,
+you can simply devise your own system to retrieve metadata which you can put in
+C<%SPEC> at the end.
 
 =for Pod::Coverage ^actionmeta_.+ ^action_.+
 
@@ -863,7 +864,7 @@ Instantiate object. Known attributes:
 
 =over 4
 
-=item * meta_accessor => STR (default 'Perinci::Access::InProcess::MetaAccessor')
+=item * meta_accessor => STR (default 'Perinci::MetaAccessor::Default')
 
 =item * load => BOOL (default 1)
 
@@ -933,6 +934,16 @@ The name was first chosen when during Sub::Spec era, so it stuck.
 =head1 SEE ALSO
 
 L<Riap>, L<Rinci>
+
+=head1 DESCRIPTION
+
+
+This module has L<Rinci> metadata.
+
+=head1 FUNCTIONS
+
+
+None are exported by default, but they are exportable.
 
 =head1 AUTHOR
 

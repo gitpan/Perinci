@@ -6,7 +6,7 @@ use warnings;
 
 use Perinci::Util qw(declare_function_dep);
 
-our $VERSION = '0.24'; # VERSION
+our $VERSION = '0.25'; # VERSION
 
 declare_function_dep(
     name => 'pm',
@@ -34,7 +34,7 @@ Perinci::Sub::dep::pm - Depend on a Perl module
 
 =head1 VERSION
 
-version 0.24
+version 0.25
 
 =head1 SYNOPSIS
 
@@ -43,6 +43,16 @@ version 0.24
      ...
      pm => 'Foo::Bar',
  }
+
+=head1 DESCRIPTION
+
+
+This module has L<Rinci> metadata.
+
+=head1 FUNCTIONS
+
+
+None are exported by default, but they are exportable.
 
 =head1 AUTHOR
 

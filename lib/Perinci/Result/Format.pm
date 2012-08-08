@@ -4,7 +4,9 @@ use 5.010;
 use strict;
 use warnings;
 
-our $VERSION = '0.24'; # VERSION
+use Scalar::Util qw(reftype);
+
+our $VERSION = '0.25'; # VERSION
 
 # text formats are special. since they are more oriented towards human instead
 # of machine, we remove envelope when status is 200, so users only see content.
@@ -47,7 +49,7 @@ sub format {
 
     my $formatter = $Formats{$format} or return undef;
 
-    if (ref($formatter->[0]) eq 'CODE') {
+    if ((reftype($formatter->[0]) // '') eq 'CODE') {
         return $formatter->[0]->($format, $res);
     } else {
         return Data::Format::Pretty::format_pretty(
@@ -68,7 +70,7 @@ Perinci::Result::Format - Format envelope result
 
 =head1 VERSION
 
-version 0.24
+version 0.25
 
 =head1 SYNOPSIS
 
@@ -134,6 +136,16 @@ Then, add your format to %Perinci::Result::Format::Formats hash:
 =head1 SEE ALSO
 
 L<Data::Format::Pretty>
+
+=head1 DESCRIPTION
+
+
+This module has L<Rinci> metadata.
+
+=head1 FUNCTIONS
+
+
+None are exported by default, but they are exportable.
 
 =head1 AUTHOR
 

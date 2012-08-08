@@ -37,19 +37,22 @@
             "JSON" : 0,
             "Log::Any" : 0,
             "Module::List" : 0,
-            "Perinci::Sub::Wrapper" : "0.20",
+            "Perinci::MetaAccessor::Default" : 0,
+            "Perinci::Sub::Wrapper" : "0.25",
+            "Perinci::Util" : 0,
             "Riap" : "v1.1.14",
             "Rinci" : "v1.1.19",
             "SHARYANTO::Package::Util" : 0,
             "Tie::Cache" : 0,
             "URI" : 0,
-            "perl" : "5.010000"
+            "perl" : "5.010001"
          }
       },
       "test" : {
          "requires" : {
             "File::chdir" : 0,
             "Perinci::Examples" : "0.08",
+            "Perinci::Sub::DepChecker" : 0,
             "Setup::File::Symlink" : 0,
             "Test::More" : "0.96"
          }
@@ -62,6 +65,6 @@
          "url" : "http://github.com/sharyanto/perl-Perinci"
       }
    },
-   "version" : "0.24"
+   "version" : "0.25"
 }
 
