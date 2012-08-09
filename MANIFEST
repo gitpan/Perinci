@@ -14,12 +14,13 @@ lib/Perinci/Access/InProcess.pm
 lib/Perinci/Easy.pm
 lib/Perinci/Manual/Tutorial.pod
 lib/Perinci/Result/Format.pm
-lib/Perinci/Sub/dep/pm.pm
+lib/Perinci/Sub/Dep/pm.pm
 lib/Perinci/Tx/Manager.pm
 t/00-compile.t
 t/access-inprocess.t
 t/access.t
 t/easy.t
+t/lib/Foo.pm
 t/release-pod-coverage.t
 t/release-pod-syntax.t
 t/result-format.t

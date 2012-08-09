@@ -58,7 +58,7 @@ sub defpkg {
 sub defclass {
 }
 
-our $VERSION = '0.25'; # VERSION
+our $VERSION = '0.26'; # VERSION
 
 1;
 # ABSTRACT: Some shortcuts
@@ -73,7 +73,7 @@ Perinci::Easy - Some shortcuts
 
 =head1 VERSION
 
-version 0.25
+version 0.26
 
 =head1 DESCRIPTION
 

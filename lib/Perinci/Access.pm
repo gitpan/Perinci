@@ -11,7 +11,7 @@ use URI;
 our $Log_Requests  = $ENV{LOG_RIAP_REQUESTS}  // 0;
 our $Log_Responses = $ENV{LOG_RIAP_RESPONSES} // 0;
 
-our $VERSION = '0.25'; # VERSION
+our $VERSION = '0.26'; # VERSION
 
 sub new {
     my ($class, %opts) = @_;
@@ -113,7 +113,7 @@ Perinci::Access - Wrapper for Perinci Riap clients
 
 =head1 VERSION
 
-version 0.25
+version 0.26
 
 =head1 SYNOPSIS
 

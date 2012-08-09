@@ -10,7 +10,7 @@ use Log::Any '$log';
 use Scalar::Util qw(blessed);
 use Time::HiRes qw(time);
 
-our $VERSION = '0.25'; # VERSION
+our $VERSION = '0.26'; # VERSION
 
 my $json = JSON->new->allow_nonref;
 
@@ -923,7 +923,7 @@ Perinci::Tx::Manager - Transaction manager
 
 =head1 VERSION
 
-version 0.25
+version 0.26
 
 =head1 SYNOPSIS
 
@@ -951,12 +951,12 @@ default value from here if tx_id not specified in arguments.
 
 Nest level (by default 1, the outermost, increases by one for each increased
 nest level). A transactional function can call another transactional function,
-and that constitutes a nesting.
+and that subcall constitutes a nesting.
 
 Internally, subcalls are also recorded in the C<call> table, and its undo/redo
 steps in the C<undo_step>/C<redo_step> table. However, during
 rollback/undo/redo, the transaction manager only directly processes outermost
-calls (those with nest_level=1). The function's is responsible for using the
+calls (those with nest_level=1). The function is responsible for using the
 subcall (and its steps) information.
 
 =head1 METHODS
