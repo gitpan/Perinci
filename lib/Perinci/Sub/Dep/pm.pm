@@ -6,7 +6,7 @@ use warnings;
 
 use Perinci::Util qw(declare_function_dep);
 
-our $VERSION = '0.26'; # VERSION
+our $VERSION = '0.27'; # VERSION
 
 declare_function_dep(
     name => 'pm',
@@ -46,7 +46,7 @@ Perinci::Sub::Dep::pm - Depend on a Perl module
 
 =head1 VERSION
 
-version 0.26
+version 0.27
 
 =head1 SYNOPSIS
 

@@ -20,9 +20,11 @@ t/00-compile.t
 t/access-inprocess.t
 t/access.t
 t/easy.t
-t/lib/Foo.pm
+t/lib/TestDep.pm
+t/lib/TestNested.pm
 t/release-pod-coverage.t
 t/release-pod-syntax.t
 t/result-format.t
 t/sub-dep-pm.t
+t/txm.t
 weaver.ini

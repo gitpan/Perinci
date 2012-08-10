@@ -6,7 +6,7 @@ use warnings;
 
 use Scalar::Util qw(reftype);
 
-our $VERSION = '0.26'; # VERSION
+our $VERSION = '0.27'; # VERSION
 
 # text formats are special. since they are more oriented towards human instead
 # of machine, we remove envelope when status is 200, so users only see content.
@@ -70,7 +70,7 @@ Perinci::Result::Format - Format envelope result
 
 =head1 VERSION
 
-version 0.26
+version 0.27
 
 =head1 SYNOPSIS
 

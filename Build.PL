@@ -11,6 +11,7 @@ my %module_build_args = (
     "Module::Build" => "0.3601",
     "Perinci::Examples" => "0.08",
     "Perinci::Sub::DepChecker" => "0.07",
+    "Perinci::Sub::Gen::Undoable" => "0.18",
     "Setup::File::Symlink" => 0,
     "Test::More" => "0.96"
   },
@@ -22,7 +23,7 @@ my %module_build_args = (
     "Steven Haryanto <stevenharyanto\@gmail.com>"
   ],
   "dist_name" => "Perinci",
-  "dist_version" => "0.26",
+  "dist_version" => "0.27",
   "license" => "perl",
   "module_name" => "Perinci",
   "recommends" => {},
@@ -43,7 +44,7 @@ my %module_build_args = (
     "Perinci::Sub::Wrapper" => "0.25",
     "Perinci::Util" => 0,
     "Riap" => "v1.1.14",
-    "Rinci" => "v1.1.19",
+    "Rinci" => "v1.1.22",
     "SHARYANTO::Package::Util" => 0,
     "Sort::Versions" => 0,
     "Tie::Cache" => 0,
