@@ -2,7 +2,7 @@ NAME
     Perinci - Collection of Perl modules for Rinci and Riap
 
 VERSION
-    version 0.28
+    version 0.29
 
 DESCRIPTION
     Perinci is a collection of modules for implementing/providing tools
@@ -14,15 +14,15 @@ DESCRIPTION
         Perinci::Sub::Wrapper is the subroutine wrapper which
         implements/enforces many of the metadata properties, like argument
         validation (using information in "args") as well as offers features
-        like convert argument passing style, automatically envelope function
-        result, etc.
+        like assign default values, convert argument passing style,
+        automatically envelope function result, etc.
 
         It is extensible so you can implement wrapper for your properties
         too.
 
     *   Riap clients and servers (Perinci::Access::*)
 
-        Perinci::Access::InProcess is a client/server (well, neither really,
+        Perinci::Access::Perl is a client/server (well, neither really,
         since everything is in-process) to access Perl modules/functions
         using the Riap protocol. It is basically a way to call your
         modules/functions using URI syntax; it also dictates a bit on how
@@ -61,30 +61,15 @@ DESCRIPTION
         and/or metadata. For example, Perinci::Sub::Gen::AccessTable can
         generate accessor function + metadata for table data.
 
-        See CPAN for more Perinci::Sub::Gen::* modules.
+        See CPAN for more "Perinci::Sub::Gen::*" modules.
 
     *   Others
 
-        Samples: Perinci::Use, Perinci::Exporter.
+        Samples: Perinci::Use, Perinci::Exporter, Test::Rinci.
 
         See CPAN for more Perinci::* modules.
 
     To get started, read Perinci::Manual::Tutorial.
-
-STATUS
-    Most modules have been implemented. It is safe to start putting metadata
-    to your code. However, some have not:
-
-    *   Argument validation
-
-        Perinci::Sub::Wrapper still does not generate code to validate
-        function arguments. This is because the Sah schema is still somewhat
-        in flux and largely unimplemented.
-
-        I usually do some manual and minimal argument validation manually in
-        the function body. They can be removed once the wrapper generates
-        validation code, or left as-is (sometimes the function is used
-        unwrapped).
 
 FAQ
   What does Perinci mean?
@@ -99,7 +84,7 @@ AUTHOR
     Steven Haryanto <stevenharyanto@gmail.com>
 
 COPYRIGHT AND LICENSE
-    This software is copyright (c) 2012 by Steven Haryanto.
+    This software is copyright (c) 2013 by Steven Haryanto.
 
     This is free software; you can redistribute it and/or modify it under
     the same terms as the Perl 5 programming language system itself.
