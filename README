@@ -2,7 +2,7 @@ NAME
     Perinci - Collection of Perl modules for Rinci and Riap
 
 VERSION
-    version 0.30
+    version 0.31
 
 DESCRIPTION
     Perinci is a collection of modules for implementing/providing tools
@@ -71,6 +71,9 @@ DESCRIPTION
 
     To get started, read Perinci::Manual::Tutorial.
 
+FUNCTIONS
+    None are exported by default, but they are exportable.
+
 FAQ
   What does Perinci mean?
     Perinci is taken from Indonesian word, meaning: to specify, to explain
@@ -79,6 +82,20 @@ FAQ
 
 SEE ALSO
     Rinci
+
+HOMEPAGE
+    Please visit the project's homepage at
+    <https://metacpan.org/release/Perinci>.
+
+SOURCE
+    Source repository is at <https://github.com/sharyanto/perl-Perinci>.
+
+BUGS
+    Please report any bugs or feature requests on the bugtracker website
+    <https://rt.cpan.org/Public/Dist/Display.html?Name=Perinci>
+
+    When submitting a bug or request, please include a test-file or a patch
+    to an existing test-file that illustrates the bug or desired feature.
 
 AUTHOR
     Steven Haryanto <stevenharyanto@gmail.com>

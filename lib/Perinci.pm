@@ -1,6 +1,6 @@
 package Perinci;
 
-our $VERSION = '0.30'; # VERSION
+our $VERSION = '0.31'; # VERSION
 
 1;
 # ABSTRACT: Collection of Perl modules for Rinci and Riap
@@ -9,13 +9,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 Perinci - Collection of Perl modules for Rinci and Riap
 
 =head1 VERSION
 
-version 0.30
+version 0.31
 
 =head1 DESCRIPTION
 
@@ -84,6 +86,11 @@ See CPAN for more Perinci::* modules.
 
 To get started, read L<Perinci::Manual::Tutorial>.
 
+=head1 FUNCTIONS
+
+
+None are exported by default, but they are exportable.
+
 =head1 FAQ
 
 =head2 What does Perinci mean?
@@ -94,6 +101,22 @@ detail. It can also be an abbreviation for "B<Pe>rl implementation of B<Rinci>".
 =head1 SEE ALSO
 
 L<Rinci>
+
+=head1 HOMEPAGE
+
+Please visit the project's homepage at L<https://metacpan.org/release/Perinci>.
+
+=head1 SOURCE
+
+Source repository is at L<https://github.com/sharyanto/perl-Perinci>.
+
+=head1 BUGS
+
+Please report any bugs or feature requests on the bugtracker website L<https://rt.cpan.org/Public/Dist/Display.html?Name=Perinci>
+
+When submitting a bug or request, please include a test-file or a
+patch to an existing test-file that illustrates the bug or desired
+feature.
 
 =head1 AUTHOR
 

@@ -9,13 +9,15 @@ __END__
 
 =pod
 
+=encoding UTF-8
+
 =head1 NAME
 
 Perinci::Manual::Tutorial - Tutorial for using the Perinci modules
 
 =head1 VERSION
 
-version 0.30
+version 0.31
 
 =head1 ABOUT PERINCI
 
@@ -428,6 +430,10 @@ using the Riap actions C<list> and C<meta>, we have a self-documenting and
 discoverable web service. This is applicable to every service implementing the
 Riap protocol.
 
+Aside from using raw HTTP clients like B<curl> or B<wget>, there are also a few
+other tools more specialized to Riap, e.g. L<riap> (a command-line Riap client
+shell).
+
 =head1 ENVELOPED RESULT
 
 If you see some of the above CLI curl outputs, we can see that function result
@@ -522,6 +528,22 @@ this is not specified in detail yet. Inputs and comments welcome.
 L<Rinci>, L<Riap>
 
 L<Perinci>
+
+=head1 HOMEPAGE
+
+Please visit the project's homepage at L<https://metacpan.org/release/Perinci>.
+
+=head1 SOURCE
+
+Source repository is at L<https://github.com/sharyanto/perl-Perinci>.
+
+=head1 BUGS
+
+Please report any bugs or feature requests on the bugtracker website L<https://rt.cpan.org/Public/Dist/Display.html?Name=Perinci>
+
+When submitting a bug or request, please include a test-file or a
+patch to an existing test-file that illustrates the bug or desired
+feature.
 
 =head1 AUTHOR
 
